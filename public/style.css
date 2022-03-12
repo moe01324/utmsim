@@ -1,0 +1,211 @@
+body { margin: 0; padding: 0; }
+#map { position: absolute; top: 0; bottom: 0; width: 80%; }
+
+body     { font-family: "Gill Sans Extrabold", Helvetica, sans-serif }
+
+#title {
+    position: absolute;
+    left: 85%;
+    top: 30px;
+    width: 15%;
+    font-size: x-large;
+}
+
+
+#labelclient {
+    position: absolute;
+    left: 85%;
+    top: 80px;
+    width: 10%;
+}
+#client {
+    position: absolute;
+    left: 85%;
+    top: 100px;
+    width: 10%;
+}
+#labelsecret {
+    position: absolute;
+    left: 85%;
+    top: 130px;
+    width: 10%;
+}
+#secret {
+    position: absolute;
+    left: 85%;
+    top: 150px;
+    width: 10%;
+}
+#authenticate {
+    position: absolute;
+    left: 85%;
+    top: 190px;
+    width: 10%;
+}
+#labelbearer {
+    position: absolute;
+    left: 85%;
+    top: 230px;
+    width: 10%;
+}
+#bearer {
+    position: absolute;
+    left: 85%;
+    top: 250px;
+    width: 10%;
+}
+
+.feedback-container {
+  position: absolute;
+  top: 190px;
+  right: 5%;
+  width: 10%;
+  z-index: 1;
+}
+
+.feedback-container>* {
+  background-color: rgba(0, 0, 0, 0.5);
+  color: #fff;
+  font-size: 11px;
+  line-height: 18px;
+  display: block;
+  margin: 0;
+  padding: 5px 10px;
+  border-radius: 3px;
+}
+
+
+#labelidentifier {
+    position: absolute;
+    left: 85%;
+    top: 400px;
+    width: 10%;
+}
+#identifier {
+    position: absolute;
+    left: 85%;
+    top: 420px;
+    width: 10%;
+}
+#labelaltitude {
+    position: absolute;
+    left: 85%;
+    top: 450px;
+    width: 10%;
+}
+#altitude {
+    position: absolute;
+    left: 85%;
+    top: 470px;
+    width: 10%;
+}
+#labelspeed {
+    position: absolute;
+    left: 85%;
+    top: 500px;
+    width: 10%;
+}
+#speed {
+    position: absolute;
+    left:85%;
+    top: 520px;
+    width: 10%;
+}
+#labeltime {
+    position: absolute;
+    left: 85%;
+    top: 550px;
+    width: 10%;
+}
+#time {
+    position: absolute;
+    left: 85%;
+    top: 570px;
+    width: 10%;
+}
+
+#flightplan {
+    position: absolute;
+    left: 85%;
+    top: 650px;
+    width: 10%;
+}
+
+#takeoff {
+    position: absolute;
+    left: 85%;
+    top: 700px;
+    width: 10%;
+}
+
+#start {
+    position: absolute;
+    left: 85%;
+    top: 750px;
+    width: 10%;
+}
+
+#ack {
+    position: absolute;
+    left: 85%;
+    top: 800px;
+    width: 10%;
+}
+
+#close {
+    position: absolute;
+    left: 85%;
+    top: 850px;
+    width: 10%;
+}
+
+
+
+
+#clear {
+    position: absolute;
+    right: 5%;
+    top: 900px;
+    width: 10%;
+}
+
+#infobutton {
+  position: absolute;
+  right: 5%;
+  bottom: 50px;
+  width: 10%;
+}
+
+.distance-container {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 1;
+}
+
+#info {
+  position: absolute;
+  top: 20%;
+  left: 20%;
+  height: 50%;
+  width: 50%;
+  z-index: 1;
+  background-color: white;
+  padding: 30px;
+  border-radius: 20px;
+  border-color: black;
+  border-style: double;
+}
+
+.distance-container>* {
+  background-color: rgba(0, 0, 0, 0.5);
+  color: #fff;
+  font-size: 11px;
+  line-height: 18px;
+  display: block;
+  margin: 0;
+  padding: 5px 10px;
+  border-radius: 3px;
+}
+
+
