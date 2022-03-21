@@ -23,7 +23,7 @@
 </br></br>
 (*) Sources at: https://github.com/moe01324/utmsim
 </br></br>
-(*) version 12032022
+(*) version 21032022
 </br></br>
 </div>
 <div id="distance" class="distance-container"></div>
@@ -71,7 +71,7 @@
     const feedbackContainer=document.getElementById('feedback');
     
     // access token from https://www.mapbox.com/ - free
-    mapboxgl.accessToken='pk.eyJ1IjoibW9lMDEzMjUiLCJhIjoiY2wwOXBzbzJtMDNhajNjcGNqemI3YTd4biJ9.8eAXVXHEiyrdccAwI9k6Ww';
+    mapboxgl.accessToken='';
     
     const map=new mapboxgl.Map( {
             container: 'map',
@@ -413,8 +413,10 @@
 
     var adddist=((speed*0.277778))*elementTimer/1000;
 
+    path_plan.features.push(line.geometry.coordinates[0]);
+
+
     for (var i=0; i < line.geometry.coordinates.length-1; i++) {
-        path_plan.features.push(line.geometry.coordinates[i]);
         var tomeasure = turf.lineString([[line.geometry.coordinates[i][0], line.geometry.coordinates[i][1]],[line.geometry.coordinates[i+1][0], line.geometry.coordinates[i+1][1]]]);
 
         var length = turf.length(tomeasure, options);
@@ -424,7 +426,10 @@
             path_plan.features.push(turf.along(tomeasure, extend, options).geometry.coordinates);
         }
       }
+    path_plan.features.push(line.geometry.coordinates[line.geometry.coordinates.length-1]);
+    
 
+    var totaltime = 0;
     for (var i=0; i < path_plan.features.length-1; i++) {
       
           var todistancefortime = turf.lineString([[path_plan.features[i][0], path_plan.features[i][1]],[path_plan.features[i+1][0], path_plan.features[i+1][1]]]);
@@ -436,8 +441,8 @@
           }
           var points = path_plan.features[i];
           var point = new Object();
-
-          var time = new Date(Date.now() + 1000*elementTimer*i);
+          totaltime = totaltime + timetoadd;
+          var time = new Date(Date.now() + 1000*totaltime);
             point = {
                 "altitude":localaltitude,
                 "time":time,
