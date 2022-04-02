@@ -21,9 +21,11 @@
 </br></br>
 (*) Alert Subscriptions are done via organization "utmsim" 
 </br></br>
+(*) Note: Starttime of OperationPlan is 60sec after the request.
+</br></br>
 (*) Sources at: https://github.com/moe01324/utmsim
 </br></br>
-(*) version 21032022
+(*) version 02042022
 </br></br>
 </div>
 <div id="distance" class="distance-container"></div>
@@ -51,6 +53,8 @@
 <input type="text" name="bearer" id="bearer" onkeyup="setTokenManually()" placeholder="Bearer Token">
 <button id="clear" onclick="clearMap()">Stop & Clear Simulation</button>
 <button id="infobutton" onclick="showInfo()">Info</button>
+<button id="rogueup" onclick="rogueUp()" disabled>Rogue Up</button>
+<button id="rogueright" onclick="rogueRight()" disabled>Rogue Right</button>
 
 <script>
     var token="";
@@ -60,6 +64,11 @@
 
     // a new OP element every x seconds
     var elementTimer = 300;
+
+    var rogueActiveUp = false;
+    var roguevalueUp = 0;
+    var rogueActiveRight = false;
+    var roguevalueRight = 0;
     
     document.getElementById("client").value=localStorage.getItem('utmclient');
     document.getElementById("secret").value=localStorage.getItem('utmsecret');
@@ -71,7 +80,7 @@
     const feedbackContainer=document.getElementById('feedback');
     
     // access token from https://www.mapbox.com/ - free
-    mapboxgl.accessToken='';
+    mapboxgl.accessToken='pk.eyJ1IjoibW9lMDEzMjUiLCJhIjoiY2wwbzlxcTVpMGV1MzNvbnRmMmNlOWdzayJ9.YbJY5mSL7Xrymf8k24Sfcg';
     
     const map=new mapboxgl.Map( {
             container: 'map',
@@ -226,11 +235,21 @@
         document.getElementById('ack').disabled=true;
         document.getElementById('close').disabled=true;
         document.getElementById('takeoff').disabled=true;
+        document.getElementById('rogueup').disabled=true;
+        document.getElementById('rogueright').disabled=true;
         document.getElementById('time').value="0";
     }
 
     function showInfo() {
         document.getElementById("info").hidden = !document.getElementById("info").hidden;
+    }
+
+    function rogueUp() {
+        rogueActiveUp = !rogueActiveUp;
+    }
+
+    function rogueRight() {
+        rogueActiveRight = !rogueActiveRight;
     }
     
     async function sendDroneCoords(dronecoords) {
@@ -242,7 +261,7 @@
         bo = new Object();
         bo.access_token= access_token; //access_token.... to be removed server side
         bo.origin = "FRQ Simulator";
-        bo.acquisition_datetime = new Date();
+
         bo.acquisition_datetime_accuracy = 205;
         bo.report_id = UUIDGeneratorBrowser();
         if (opID == ""){
@@ -303,6 +322,27 @@
             }];    
 
             var coord=path_pos.features[i];
+
+            if (rogueActiveUp || roguevalueUp != 0){
+                if (rogueActiveUp){
+                    coord[1] = coord[1] + roguevalueUp/7000;
+                    roguevalueUp++;
+                } else {
+                    var minvalue = roguevalueUp--;
+                    coord[1] = coord[1] + minvalue/7000;
+                }
+            }
+
+            if (rogueActiveRight || roguevalueRight != 0){
+                if (rogueActiveRight){
+                    coord[0] = coord[0] + roguevalueRight/7000;
+                    roguevalueRight++;
+                } else {
+                    var minvalue = roguevalueRight--;
+                    coord[0] = coord[0] + minvalue/7000;
+                }
+            }
+
             dronemarker.setLngLat(coord);
 
             bo.position = {
@@ -312,6 +352,7 @@
                 "position_crs": "EPSG4979",
                 "position_data_age": 1
             };
+            bo.acquisition_datetime = new Date();
 
             //sending every second
             await sleep(1000).then(()=> {
@@ -325,12 +366,13 @@
                                     body: JSON.stringify(bo)
                                 }
                             );
-                            const content=await rawResponse.json();
+                            //const content=await rawResponse.json();
                             //updating drone position on map
                             dronemarker.addTo(map);
                         }
                     )(coord);
                 } 
+                
             );  
         }
     }
@@ -429,7 +471,7 @@
     path_plan.features.push(line.geometry.coordinates[line.geometry.coordinates.length-1]);
     
 
-    var totaltime = 0;
+    var totaltime = 60;
     for (var i=0; i < path_plan.features.length-1; i++) {
       
           var todistancefortime = turf.lineString([[path_plan.features[i][0], path_plan.features[i][1]],[path_plan.features[i+1][0], path_plan.features[i+1][1]]]);
@@ -441,8 +483,9 @@
           }
           var points = path_plan.features[i];
           var point = new Object();
-          totaltime = totaltime + timetoadd;
           var time = new Date(Date.now() + 1000*totaltime);
+          totaltime = totaltime + timetoadd;
+          
             point = {
                 "altitude":localaltitude,
                 "time":time,
@@ -589,6 +632,8 @@
     
         else {
             document.getElementById('start').disabled=false;
+            document.getElementById('rogueup').disabled=false;
+            document.getElementById('rogueright').disabled=false;
             document.getElementById('flightplan').disabled=false;
         }
     
