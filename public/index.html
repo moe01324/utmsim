@@ -23,19 +23,22 @@
 </br></br>
 (*) Note: Starttime of OperationPlan is 60sec after the request.
 </br></br>
+(*) Note: Added textfield to provide starttime of operationplan.
+</br></br>
 (*) Sources at: https://github.com/moe01324/utmsim
 </br></br>
-(*) version 02042022
+(*) version 06042022
 </br></br>
 </div>
 <div id="distance" class="distance-container"></div>
-<div id="feedback" class="feedback-container"></div>
 <div id="title" name="title">UTM Drone Simulator</div>
 <label id="labelidentifier" for="identifier">Drone Identifier</label>
 <label id="labelaltitude" for="altitude">Max Altitude (m)</label>
 <label id="labelspeed" for="speed">Speed (km/h)</label>
 <label id="labeltime" for="time">Estimated Flighttime (min)</label>
 <input type="text" name="identifier" id="identifier" onkeyup="enableSim()" placeholder="Drone Identifier">
+<label id="starttimelabel" for="starttime">OP starttime</label>
+<input type="text" name="starttime" id="starttime" placeholder="2022-04-04T23:28:56.782Z">
 <input type="text" name="altitude" id="altitude" onkeyup="enableSim()" placeholder="Max Altitude (m)">
 <input type="text" name="speed" id="speed" onkeyup="enableSim()" placeholder="Speed (km/h)">
 <input type="text" name="time" id="time" placeholder="Estimated Flighttime (min)" readonly>
@@ -53,8 +56,8 @@
 <input type="text" name="bearer" id="bearer" onkeyup="setTokenManually()" placeholder="Bearer Token">
 <button id="clear" onclick="clearMap()">Stop & Clear Simulation</button>
 <button id="infobutton" onclick="showInfo()">Info</button>
-<button id="rogueup" onclick="rogueUp()" disabled>Rogue Up</button>
-<button id="rogueright" onclick="rogueRight()" disabled>Rogue Right</button>
+<button id="rogueup" onclick="rogueUp()" disabled>Rogue North</button>
+<button id="rogueright" onclick="rogueRight()" disabled>Rogue East</button>
 
 <script>
     var token="";
@@ -76,8 +79,9 @@
     document.getElementById("altitude").value=localStorage.getItem('utmaltitude');
     document.getElementById("identifier").value=localStorage.getItem('utmidentifier');
 
+    document.getElementById("starttime").value = new Date().toJSON();
+
     const distanceContainer=document.getElementById('distance');
-    const feedbackContainer=document.getElementById('feedback');
     
     // access token from https://www.mapbox.com/ - free
     mapboxgl.accessToken='pk.eyJ1IjoibW9lMDEzMjUiLCJhIjoiY2wwbzlxcTVpMGV1MzNvbnRmMmNlOWdzayJ9.YbJY5mSL7Xrymf8k24Sfcg';
@@ -270,7 +274,7 @@
         bo.operation_id = opID,
         bo.identifications = [{
             "confidence": 1,
-            "type": "ID_ICAO",
+            "type": "ID_CALLSIGN",
             "value": "" + ident + ""
         }];
         bo.classification_info = {
@@ -483,7 +487,14 @@
           }
           var points = path_plan.features[i];
           var point = new Object();
-          var time = new Date(Date.now() + 1000*totaltime);
+
+          
+          var test = new Date(document.getElementById("starttime").value);
+
+         
+          var time = new Date(test.getTime() + 1000*totaltime);
+    
+
           totaltime = totaltime + timetoadd;
           
             point = {
@@ -646,18 +657,6 @@
 
         saveCredentials();
     }
-
-    function disableAuth() {
-        if(token!=="") {
-            document.getElementById('authenticate').disabled=true;
-            document.getElementById('authenticate').hidden=true;
-        }
-    
-        else {
-            document.getElementById('authenticate').disabled=false;
-            document.getElementById('authenticate').hidden=false;
-        }
-    }
     
     function saveCredentials() {
         localStorage.utmclient=document.getElementById("client").value;
@@ -670,19 +669,7 @@
     function setToken(token) {
         access_token = token;
         document.getElementById("bearer").value = token;
-        
-        const value=document.createElement('pre');
-        if(access_token != 'undefined' && access_token != "")
-        {
-            value.textContent = `Authentication successful`;
-            disableAuth(); 
-            
-        } else{
-            value.textContent = `Authentication failed`;
-        }
-        feedbackContainer.innerHTML='';
-        
-        feedbackContainer.appendChild(value);
+
     }
 
     function setTokenManually() {

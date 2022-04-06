@@ -6,174 +6,180 @@ body     { font-family: "Gill Sans Extrabold", Helvetica, sans-serif }
 #title {
     position: absolute;
     left: 85%;
-    top: 30px;
+    top: 10px;
     width: 15%;
     font-size: x-large;
 }
 
-
 #labelclient {
     position: absolute;
     left: 85%;
-    top: 80px;
+    top: 50px;
     width: 10%;
 }
 #client {
     position: absolute;
     left: 85%;
-    top: 100px;
+    top: 70px;
     width: 10%;
 }
 #labelsecret {
     position: absolute;
     left: 85%;
-    top: 130px;
+    top: 100px;
     width: 10%;
 }
 #secret {
     position: absolute;
     left: 85%;
-    top: 150px;
+    top: 120px;
     width: 10%;
 }
 #authenticate {
     position: absolute;
     left: 85%;
-    top: 190px;
+    top: 150px;
     width: 10%;
 }
 #labelbearer {
     position: absolute;
     left: 85%;
-    top: 230px;
+    top: 180px;
     width: 10%;
 }
 #bearer {
     position: absolute;
     left: 85%;
-    top: 250px;
+    top: 200px;
     width: 10%;
 }
-
-.feedback-container {
-  position: absolute;
-  top: 190px;
-  right: 5%;
-  width: 10%;
-  z-index: 1;
-}
-
-.feedback-container>* {
-  background-color: rgba(0, 0, 0, 0.5);
-  color: #fff;
-  font-size: 11px;
-  line-height: 18px;
-  display: block;
-  margin: 0;
-  padding: 5px 10px;
-  border-radius: 3px;
-}
-
 
 #labelidentifier {
     position: absolute;
     left: 85%;
-    top: 400px;
+    top: 250px;
     width: 10%;
 }
 #identifier {
     position: absolute;
     left: 85%;
-    top: 420px;
+    top: 270px;
     width: 10%;
 }
 #labelaltitude {
     position: absolute;
     left: 85%;
-    top: 450px;
+    top: 300px;
     width: 10%;
 }
 #altitude {
     position: absolute;
     left: 85%;
-    top: 470px;
+    top: 320px;
     width: 10%;
 }
 #labelspeed {
     position: absolute;
     left: 85%;
-    top: 500px;
+    top: 350px;
     width: 10%;
 }
 #speed {
     position: absolute;
     left:85%;
-    top: 520px;
+    top: 370px;
     width: 10%;
 }
 #labeltime {
     position: absolute;
     left: 85%;
-    top: 550px;
+    top: 400px;
     width: 10%;
 }
 #time {
     position: absolute;
     left: 85%;
-    top: 570px;
+    top: 420px;
+    width: 10%;
+}
+
+#starttimelabel {
+    position: absolute;
+    left: 85%;
+    top: 450px;
+    width: 10%;
+}
+
+#starttime {
+    position: absolute;
+    left: 85%;
+    top: 470px;
     width: 10%;
 }
 
 #flightplan {
     position: absolute;
     left: 85%;
-    top: 650px;
+    top: 520px;
     width: 10%;
 }
 
 #takeoff {
     position: absolute;
     left: 85%;
-    top: 700px;
+    top: 560px;
     width: 10%;
 }
 
 #start {
     position: absolute;
     left: 85%;
-    top: 750px;
+    top: 600px;
     width: 10%;
+}
+
+#rogueup {
+    position: absolute;
+    right: 10%;
+    top: 640px;
+    width: 5%;
+}
+
+#rogueright {
+    position: absolute;
+    right: 5%;
+    top: 640px;
+    width: 5%;
 }
 
 #ack {
     position: absolute;
     left: 85%;
-    top: 800px;
+    top: 680px;
     width: 10%;
 }
 
 #close {
     position: absolute;
     left: 85%;
-    top: 850px;
+    top: 720px;
     width: 10%;
 }
-
-
-
 
 #clear {
     position: absolute;
     right: 5%;
-    top: 900px;
+    top: 760px;
     width: 10%;
 }
 
+
+
 #infobutton {
   position: absolute;
-  right: 5%;
-  bottom: 50px;
-  width: 10%;
+  right: 10px;
+  bottom: 10px;
+  width: 3%;
 }
 
 .distance-container {
