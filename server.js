@@ -2,7 +2,7 @@ console.log('UTM Drone Sim Server running');
 
 const express = require('express');
 const fetch = require('node-fetch');
-const {Headers} = require('node-fetch');
+const { Headers } = require('node-fetch');
 const app = express();
 
 app.use(express.static('public'));
@@ -32,7 +32,7 @@ app.post('/simulate', (req, res) => {
 
     fetch("https://telemetry-endpoint.utm-labs-frequentis.com/pose", requestOptions)
         .then(response => response.text())
-       // .then(result => console.log(result))
+        .then(result => console.log(result))
         .catch(error => console.log('error', error));
 
     res.status(201).json({
@@ -44,10 +44,10 @@ app.post('/alerts', (req, res) => {
 
     alerts.push(req.body);
 
-    if (alerts.length > 100){
+    if (alerts.length > 100) {
         alerts.shift();
     }
-    
+
     res.status(201).json({
         result: "27"
     });
@@ -62,14 +62,14 @@ app.post('/ackAlert', (req, res) => {
     ack = new Object();
     ack.status = "ACKNOWLEDGED";
 
-    alerts.forEach(function(alert){
-        alert.operation_plans.forEach(function(op){
-            
-            if (op === req.body.opID){
+    alerts.forEach(function (alert) {
+        alert.operation_plans.forEach(function (op) {
+
+            if (op === req.body.opID) {
                 ack.message_id = alert.message_id;
             }
-          });
-      });
+        });
+    });
 
     var requestOptions = {
         method: 'POST',
@@ -80,7 +80,7 @@ app.post('/ackAlert', (req, res) => {
 
     fetch("https://alerting-endpoint.utm-labs-frequentis.com/processAck", requestOptions)
         .then(response => response.text())
-       // .then(result => console.log(result))
+        // .then(result => console.log(result))
         .catch(error => console.log('error', error));
 
     res.status(201).json({
@@ -101,14 +101,14 @@ app.post('/flightplan', (req, res) => {
         redirect: 'follow'
     };
 
-  fetch("https://utm-endpoint.utm-labs-frequentis.com/v2/notifyOperationPlan", requestOptions)
-      .then(response => response.text())
-      .then(result => console.log(result))
-      .catch(error => console.log('error', error));
+    fetch("https://utm-endpoint.utm-labs-frequentis.com/v2/notifyOperationPlan", requestOptions)
+        .then(response => response.text())
+        .then(result => console.log(result))
+        .catch(error => console.log('error', error));
 
-  res.status(201).json({
-      result: "27"
-  });
+    res.status(201).json({
+        result: "27"
+    });
 });
 
 app.post('/authutm', (req, res) => {
@@ -125,12 +125,12 @@ function authUTM(req, res) {
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded'
         }
-    }).then(function(resp) {
+    }).then(function (resp) {
         return resp.json();
-    }).then(function(data) {
+    }).then(function (data) {
         //console.log('token', data);
         res.status(201).json(data);
-    }).catch(function(err) {
+    }).catch(function (err) {
         // Log any errors
         console.log('something went wrong', err);
         res.status(400).json(err);
