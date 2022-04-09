@@ -152,24 +152,40 @@ body     { font-family: "Gill Sans Extrabold", Helvetica, sans-serif }
     width: 5%;
 }
 
-#ack {
+#land {
     position: absolute;
-    left: 85%;
+    right: 5%;
     top: 680px;
     width: 10%;
 }
 
-#close {
+#ack {
     position: absolute;
     left: 85%;
     top: 720px;
     width: 10%;
 }
 
+#close {
+    position: absolute;
+    left: 85%;
+    top: 760px;
+    width: 10%;
+}
+
 #clear {
     position: absolute;
     right: 5%;
-    top: 760px;
+    top: 800px;
+    width: 10%;
+}
+
+
+
+#geojson {
+    position: absolute;
+    right: 5%;
+    top: 800px;
     width: 10%;
 }
 
