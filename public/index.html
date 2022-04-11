@@ -23,13 +23,13 @@
         </br></br>
         (*) Alert Subscriptions are done via organization "utmsim"
         </br></br>
-        (*) Note: Starttime of OperationPlan is 60sec after the request.
+        (*) Note: Click the "rogue" button again to send the drone back to the nominal flight path.
         </br></br>
         (*) Note: URL parameter "?debug" enables a bit more client console logging.
         </br></br>
         (*) Sources at: https://github.com/moe01324/utmsim
         </br></br>
-        (*) version 09042022
+        (*) version 11042022
         </br></br>
     </div>
     <div id="distance" class="distance-container"></div>
@@ -512,7 +512,7 @@
             }
             path_plan.features.push(line.geometry.coordinates[line.geometry.coordinates.length - 1]);
 
-            var totaltime = 60;
+            var totaltime = 0;
             for (var i = 0; i < path_plan.features.length - 1; i++) {
 
                 var todistancefortime = turf.lineString([[path_plan.features[i][0], path_plan.features[i][1]], [path_plan.features[i + 1][0], path_plan.features[i + 1][1]]]);
