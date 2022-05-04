@@ -103,7 +103,7 @@ app.post('/flightplan', (req, res) => {
 
     fetch("https://utm-endpoint.utm-labs-frequentis.com/v2/notifyOperationPlan", requestOptions)
         .then(response => response.text())
-       // .then(result => console.log(result))
+       .then(result => console.log(result))
         .catch(error => console.log('error', error));
 
     res.status(201).json({
