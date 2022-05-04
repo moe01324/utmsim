@@ -27,6 +27,8 @@
         </br></br>
         (*) Note: URL parameter "?debug" enables a bit more client console logging.
         </br></br>
+        (*) Note: URL parameter "?loadjson" enables a field to directly use a geojson linestring as a OP path.
+        </br></br>
         (*) Sources at: https://github.com/moe01324/utmsim
         </br></br>
         (*) version 11042022
@@ -61,6 +63,7 @@
     <button id="rogueup" onclick="rogueUp()" disabled>Rogue North</button>
     <button id="rogueright" onclick="rogueRight()" disabled>Rogue East</button>
     <button id="land" onclick="land()" disabled >Land</button>
+    <input type="text" name="geojson" id="geojson" placeholder="LineString GeoJson ONLY" onkeyup="loadJSON()">
 
     <script>
         var token = "";
@@ -73,8 +76,15 @@
 
         const queryString = window.location.search;
         const urlParams = new URLSearchParams(queryString);
-        const debug = urlParams.has('debug')
-        console.log(debug);
+        const debug = urlParams.has('debug');
+        const loadjson = urlParams.has('loadjson');
+
+        if (loadjson){
+            document.getElementById("geojson").style.display = "visible";
+        }else {
+            document.getElementById("geojson").style.display = "none";
+        }
+        
 
         // a new OP element every x seconds
         var elementTimer = 300;
@@ -232,11 +242,26 @@
         );
 
         function simulateDrone() {
-            sendDroneCoords(linestring.geometry.coordinates);
+            if (document.getElementById("geojson").value !== "" ) {
+                var geo = document.getElementById("geojson").value;
+                const obj = JSON.parse(geo);
+                map.getSource('geojson').setData(obj);
+                sendDroneCoords(obj.features[0].geometry.coordinates);
+            }else {
+                sendDroneCoords(linestring.geometry.coordinates);
+            }
+
         }
 
         function makeFlightplan() {
-            sendFlightplan(linestring.geometry.coordinates);
+            if (document.getElementById("geojson").value !== "" ) {
+                var geo = document.getElementById("geojson").value;
+                const obj = JSON.parse(geo);
+                map.getSource('geojson').setData(obj);
+                sendFlightplan(obj.features[0].geometry.coordinates);
+            }else {
+                sendFlightplan(linestring.geometry.coordinates);
+            }
         }
 
         function clearMap() {
@@ -678,6 +703,17 @@
             }
             );
         }
+
+        function loadJSON() {
+            if (document.getElementById("geojson").value !== "" ) {
+                var geo = document.getElementById("geojson").value;
+                const obj = JSON.parse(geo);
+                map.getSource('geojson').setData(obj);
+            }
+
+            
+        }
+
 
         function enableSim() {
             if (document.getElementById("identifier").value === "" || document.getElementById("altitude").value === "" || document.getElementById("speed").value === "" || geojson.features.length < 2 || document.getElementById("bearer").value === "") {
