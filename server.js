@@ -6,7 +6,7 @@ const { Headers } = require('node-fetch');
 const app = express();
 
 app.use(express.static('public'));
-app.use(express.json());
+app.use(express.json({limit: '50mb'}));
 
 const alerts = [];
 
@@ -101,7 +101,7 @@ app.post('/flightplan', (req, res) => {
         redirect: 'follow'
     };
 
-    fetch("https://utm-endpoint.utm-labs-frequentis.com/v2/notifyOperationPlan", requestOptions)
+    fetch("https://operation-service.utm-labs-frequentis.com//api/authorizeOperationPlan", requestOptions)
         .then(response => response.text())
        .then(result => console.log(result))
         .catch(error => console.log('error', error));
@@ -109,6 +109,49 @@ app.post('/flightplan', (req, res) => {
     res.status(201).json({
         result: "27"
     });
+});
+
+app.post('/takeoff', (req, res) => {
+    var myHeaders = new Headers();
+    myHeaders.append("Content-Type", "application/json");
+    myHeaders.append("Authorization", "Bearer " + req.body.access_token);
+    delete req.body['access_token'];
+    var requestOptions = {
+        method: 'POST',
+        headers: myHeaders,
+        body: JSON.stringify(req.body),
+        redirect: 'follow'
+    };
+
+    fetch("https://operation-service.utm-labs-frequentis.com/api/activateOperationPlan", requestOptions)
+        .then(response => response.text())
+       .then(result => console.log(result))
+        .catch(error => console.log('error', error));
+
+    res.status(201).json({
+        result: "27"
+    });
+});
+
+app.post('/computeVolumeFromTrajectory', async (req, res) => {
+    var myHeaders = new Headers();
+    myHeaders.append("Content-Type", "application/json");
+    myHeaders.append("Authorization", "Bearer " + req.body.access_token);
+    delete req.body['access_token'];
+    var requestOptions = {
+        method: 'POST',
+        headers: myHeaders,
+        body: JSON.stringify(req.body),
+        redirect: 'follow'
+    };
+
+    const result = await fetch("https://operation-service.utm-labs-frequentis.com/api/computeVolumeFromTrajectoryAndMinimumSeparation", requestOptions)
+        .then(response => response.text())
+        .then(result => {
+            res.status(201).json(result);
+            console.log(result)
+        })
+        .catch(error => console.log('error', error));
 });
 
 app.post('/authutm', (req, res) => {
