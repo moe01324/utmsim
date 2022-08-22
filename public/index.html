@@ -31,16 +31,18 @@
         </br></br>
         (*) Sources at: https://github.com/moe01324/utmsim
         </br></br>
-        (*) version 11042022
+        (*) version 02082022-ASA
         </br></br>
     </div>
     <div id="distance" class="distance-container"></div>
     <div id="title" name="title">UTM Drone Simulator</div>
     <label id="labelidentifier" for="identifier">Drone Identifier</label>
+    <label id="labeldronereg" for="dronereg">Drone Registration</label>
     <label id="labelaltitude" for="altitude">Max Altitude (m)</label>
     <label id="labelspeed" for="speed">Speed (km/h)</label>
     <label id="labeltime" for="time">Estimated Flighttime (min)</label>
     <input type="text" name="identifier" id="identifier" onkeyup="enableSim()" placeholder="Drone Identifier">
+    <input type="text" name="dronereg" id="dronereg" placeholder="Drone Registration UUID">
     <label id="starttimelabel" for="starttime">Operation Plan Start Time</label>
     <input type="text" name="starttime" id="starttime" placeholder="2022-04-04T23:28:56.782Z">
     <input type="text" name="altitude" id="altitude" onkeyup="enableSim()" placeholder="Max Altitude (m)">
@@ -99,8 +101,11 @@
         document.getElementById("speed").value = localStorage.getItem('utmspeed');
         document.getElementById("altitude").value = localStorage.getItem('utmaltitude');
         document.getElementById("identifier").value = localStorage.getItem('utmidentifier');
+        document.getElementById("dronereg").value = localStorage.getItem('utmdronereg');
 
-        document.getElementById("starttime").value = new Date().toJSON();
+        var newDateObj = new Date();
+        newDateObj.setTime(newDateObj.getTime() + (5 * 60 * 1000));
+        document.getElementById("starttime").value = newDateObj.toJSON();
 
         const distanceContainer = document.getElementById('distance');
 
@@ -406,7 +411,7 @@
             bo.position = {
                 "latitude": coord[1],
                 "longitude": coord[0],
-                "position_accuracy": 0.0002,
+                "position_accuracy": 20,
                 "position_crs": "EPSG4979",
                 "position_data_age": 1
             };
@@ -447,6 +452,7 @@
         async function sendFlightplan(dronecoords) {
             opID = UUIDGeneratorBrowser();
             var ident = document.getElementById("identifier").value;
+            var dronereg = document.getElementById("dronereg").value;
             var altitude = document.getElementById("altitude").value;
             var speed = document.getElementById("speed").value;
 
@@ -473,9 +479,9 @@
             op.operationTrajectory = {
                 "positionCRS": "WGS84",
                 "altitudeCRS": "WGS84",
-                "positionUncertainty": 0,
-                "altitudeUncertainty": 0,
-                "timingUncertainty": 0,
+                "positionUncertainty": 50,
+                "altitudeUncertainty": 10,
+                "timingUncertainty": 10,
                 "altitudeType": "ABOVE_ELLIPSOID",
                 trajectoryElements
             };
@@ -483,8 +489,8 @@
             op.takeoffLocation = null;
             op.landingLocation = null;
             op.uasRegistrations = [{
-                "droneId": "FRQ Simulator",
-                "registrationId": "a827c8e6-2e8e-4b5e-b9b5-b96f722ab662",
+                "droneId": ident,
+                "registrationId": dronereg,
                 "registrationLocation": "Central Registration Office Wien-Meidling"
             }];
             op.flightDetails = [{
@@ -580,6 +586,23 @@
                 "coordinates": [point.geometry.coordinates[0], point.geometry.coordinates[1]]
             };
 
+
+
+            //compute volume from trajectory
+            const rawResponse = await fetch('/computeVolumeFromTrajectory', {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(op)
+                }
+            );
+
+            op = JSON.parse(await rawResponse.json());
+            op.access_token = access_token;
+
+            console.log(op);
             opsaved = op;
             if (debug) {
                 console.log(JSON.stringify(op));
@@ -634,11 +657,12 @@
         async function takeoff() {
             opsaved.state = "TAKEOFFREQUESTED";
             op.version = UUIDGeneratorBrowser();
+            op.updateTime = new Date();
 
             //sending 
             await sleep(10).then(() => {
                 (async () => {
-                    const rawResponse = await fetch('/flightplan', {
+                    const rawResponse = await fetch('/takeoff', {
                         method: 'POST',
                         headers: {
                             'Accept': 'application/json',
@@ -648,6 +672,7 @@
                     }
                     );
                     const content = await rawResponse.json();
+                    console.log (content);
                 }
                 )();
             }
@@ -745,6 +770,7 @@
             localStorage.utmidentifier = document.getElementById("identifier").value;
             localStorage.utmaltitude = document.getElementById("altitude").value;
             localStorage.utmspeed = document.getElementById("speed").value;
+            localStorage.utmdronereg = document.getElementById("dronereg").value;
         }
 
         function setToken(token) {

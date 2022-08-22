@@ -66,117 +66,131 @@ body     { font-family: "Gill Sans Extrabold", Helvetica, sans-serif }
     top: 270px;
     width: 10%;
 }
-#labelaltitude {
+
+#labeldronereg {
     position: absolute;
     left: 85%;
     top: 300px;
     width: 10%;
 }
-#altitude {
+#dronereg {
     position: absolute;
     left: 85%;
     top: 320px;
     width: 10%;
 }
-#labelspeed {
+
+#labelaltitude {
     position: absolute;
     left: 85%;
     top: 350px;
     width: 10%;
 }
-#speed {
+#altitude {
     position: absolute;
-    left:85%;
+    left: 85%;
     top: 370px;
     width: 10%;
 }
-#labeltime {
+#labelspeed {
     position: absolute;
     left: 85%;
     top: 400px;
     width: 10%;
 }
-#time {
+#speed {
     position: absolute;
-    left: 85%;
+    left:85%;
     top: 420px;
     width: 10%;
 }
-
-#starttimelabel {
+#labeltime {
     position: absolute;
     left: 85%;
     top: 450px;
     width: 10%;
 }
-
-#starttime {
+#time {
     position: absolute;
     left: 85%;
     top: 470px;
     width: 10%;
 }
 
-#flightplan {
+#starttimelabel {
+    position: absolute;
+    left: 85%;
+    top: 500px;
+    width: 10%;
+}
+
+#starttime {
     position: absolute;
     left: 85%;
     top: 520px;
     width: 10%;
 }
 
-#takeoff {
+#flightplan {
     position: absolute;
     left: 85%;
     top: 560px;
     width: 10%;
 }
 
-#start {
+#takeoff {
     position: absolute;
     left: 85%;
     top: 600px;
     width: 10%;
 }
 
+#start {
+    position: absolute;
+    left: 85%;
+    top: 640px;
+    width: 10%;
+}
+
 #rogueup {
     position: absolute;
     right: 10%;
-    top: 640px;
+    top: 680px;
     width: 5%;
 }
 
 #rogueright {
     position: absolute;
     right: 5%;
-    top: 640px;
+    top: 680px;
     width: 5%;
 }
 
 #land {
     position: absolute;
     right: 5%;
-    top: 680px;
+    top: 720px;
     width: 10%;
 }
 
 #ack {
     position: absolute;
     left: 85%;
-    top: 720px;
+    top: 760px;
     width: 10%;
 }
 
 #close {
     position: absolute;
     left: 85%;
-    top: 760px;
+    top: 800px;
     width: 10%;
 }
 
 #clear {
     position: absolute;
     right: 5%;
-    top: 800px;
+    top: 840px;
     width: 10%;
 }
 
@@ -185,7 +199,7 @@ body     { font-family: "Gill Sans Extrabold", Helvetica, sans-serif }
 #geojson {
     position: absolute;
     right: 5%;
-    top: 900px;
+    top: 940px;
     width: 10%;
 }
 
