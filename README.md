@@ -10,6 +10,8 @@ node server.js
 
 subscription for alerts manually via https://alerting-endpoint.utm-labs-frequentis.com/swagger-ui/#/Alert%20Subscription%20API/subscribeUsingPOST - does need URL on 80/443 reachable
 
+subscription for OPS manually via https://operation-service.utm-labs-frequentis.com/swagger-ui/#/03%20Subscription - does need URL on 80/443 reachable
+
 please unsubscribe if not needed any longer
 
 
