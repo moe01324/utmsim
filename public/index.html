@@ -21,7 +21,9 @@
         </br></br>
         (*) Connected to NBD-UTM instance. https://smartsis-airlabs.utm-labs-frequentis.com/
         </br></br>
-        (*) Alert Subscriptions are done via organization "utmsim"
+        (*) Alert Subscriptions are done via organization "utmsim" - needed for alert ack
+        </br></br>
+        (*) OP Subscriptions are done via organization "utmsim" - needed fo close
         </br></br>
         (*) Note: Click the "rogue" button again to send the drone back to the nominal flight path.
         </br></br>
@@ -31,7 +33,7 @@
         </br></br>
         (*) Sources at: https://github.com/moe01324/utmsim
         </br></br>
-        (*) version 02082022-ASA
+        (*) version 05092022
         </br></br>
     </div>
     <div id="distance" class="distance-container"></div>
@@ -684,12 +686,11 @@
             path_plan.features.length = 0;
             landed = 0;
             opsaved.state = "CLOSED";
-            op.version = UUIDGeneratorBrowser();
 
             //sending 
             await sleep(10).then(() => {
                 (async () => {
-                    const rawResponse = await fetch('/flightplan', {
+                    const rawResponse = await fetch('/declareEndOfFlight', {
                         method: 'POST',
                         headers: {
                             'Accept': 'application/json',
