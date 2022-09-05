@@ -9,6 +9,7 @@ app.use(express.static('public'));
 app.use(express.json({limit: '50mb'}));
 
 const alerts = [];
+const OPs = [];
 
 app.listen(8080, () => {
     console.log('listening on 8080');
@@ -53,6 +54,21 @@ app.post('/alerts', (req, res) => {
     });
 });
 
+
+app.post('/OPs', (req, res) => {
+
+    OPs.push(req.body);
+
+    if (OPs.length > 100) {
+        OPs.shift();
+    }
+
+    res.status(201).json({
+        result: "27"
+    });
+});
+
+
 app.post('/ackAlert', (req, res) => {
     var myHeaders = new Headers();
     myHeaders.append("Content-Type", "application/json");
@@ -87,6 +103,37 @@ app.post('/ackAlert', (req, res) => {
         result: "27"
     });
 });
+
+app.post('/declareEndOfFlight', (req, res) => {
+    var myHeaders = new Headers();
+    myHeaders.append("Content-Type", "application/json");
+    myHeaders.append("Authorization", "Bearer " + req.body.access_token);
+    delete req.body['access_token'];
+
+    ack = new Object();
+    ack.operationPlanId = req.body['operationPlanId'];
+
+    let thisop = OPs.find(thisop => thisop.operationPlanId === ack.operationPlanId);
+    
+    ack.operationPlanVersion = thisop.version;
+
+    var requestOptions = {
+        method: 'POST',
+        headers: myHeaders,
+        body: JSON.stringify(ack),
+        redirect: 'follow'
+    };
+
+    fetch("https://operation-service.utm-labs-frequentis.com/api/declareEndOfFlight", requestOptions)
+        .then(response => response.text())
+         .then(result => console.log(result))
+        .catch(error => console.log('error', error));
+
+    res.status(201).json({
+        result: "27"
+    });
+});
+
 
 
 app.post('/flightplan', (req, res) => {
