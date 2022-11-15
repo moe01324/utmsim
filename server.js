@@ -5,6 +5,16 @@ const fetch = require('node-fetch');
 const { Headers } = require('node-fetch');
 const app = express();
 
+
+const telemetryendpoint = process.env.telemetryendpoint // https://telemetry-endpoint.utm-labs-frequentis.com/pose
+const opendpoint = process.env.opendpoint // https://operation-service.utm-labs-frequentis.com//api/authorizeOperationPlan
+const ackendpoint = process.env.ackendpoint // https://alerting-endpoint.utm-labs-frequentis.com/processAck
+const endendpoint = process.env.endendpoint // https://operation-service.utm-labs-frequentis.com/api/declareEndOfFlight
+const activateendpoint = process.env.activateendpoint // https://operation-service.utm-labs-frequentis.com/api/activateOperationPlan
+const keykloakendpoint = process.env.keycloakendpoint // https://keycloak-airlabs.utm-labs-frequentis.com/auth/realms/swim/protocol/openid-connect/token
+const computeendpoint = process.env.computeendpoint //https://operation-service.utm-labs-frequentis.com/api/computeVolumeFromTrajectoryAndMinimumSeparation
+
+
 app.use(express.static('public'));
 app.use(express.json({limit: '50mb'}));
 
@@ -31,7 +41,7 @@ app.post('/simulate', (req, res) => {
         redirect: 'follow'
     };
 
-    fetch("https://telemetry-endpoint.utm-labs-frequentis.com/pose", requestOptions)
+    fetch(telemetryendpoint, requestOptions)
         .then(response => response.text())
       //  .then(result => console.log(result))
         .catch(error => console.log('error', error));
@@ -94,7 +104,7 @@ app.post('/ackAlert', (req, res) => {
         redirect: 'follow'
     };
 
-    fetch("https://alerting-endpoint.utm-labs-frequentis.com/processAck", requestOptions)
+    fetch(ackendpoint, requestOptions)
         .then(response => response.text())
         // .then(result => console.log(result))
         .catch(error => console.log('error', error));
@@ -124,7 +134,7 @@ app.post('/declareEndOfFlight', (req, res) => {
         redirect: 'follow'
     };
 
-    fetch("https://operation-service.utm-labs-frequentis.com/api/declareEndOfFlight", requestOptions)
+    fetch(endendpoint, requestOptions)
         .then(response => response.text())
          .then(result => console.log(result))
         .catch(error => console.log('error', error));
@@ -148,7 +158,7 @@ app.post('/flightplan', (req, res) => {
         redirect: 'follow'
     };
 
-    fetch("https://operation-service.utm-labs-frequentis.com//api/authorizeOperationPlan", requestOptions)
+    fetch(opendpoint, requestOptions)
         .then(response => response.text())
        .then(result => console.log(result))
         .catch(error => console.log('error', error));
@@ -170,7 +180,7 @@ app.post('/takeoff', (req, res) => {
         redirect: 'follow'
     };
 
-    fetch("https://operation-service.utm-labs-frequentis.com/api/activateOperationPlan", requestOptions)
+    fetch(activateendpoint, requestOptions)
         .then(response => response.text())
        .then(result => console.log(result))
         .catch(error => console.log('error', error));
@@ -192,7 +202,7 @@ app.post('/computeVolumeFromTrajectory', async (req, res) => {
         redirect: 'follow'
     };
 
-    const result = await fetch("https://operation-service.utm-labs-frequentis.com/api/computeVolumeFromTrajectoryAndMinimumSeparation", requestOptions)
+    const result = await fetch(computeendpoint, requestOptions)
         .then(response => response.text())
         .then(result => {
             res.status(201).json(result);
@@ -209,7 +219,7 @@ function authUTM(req, res) {
     client = req.body.client;
     secret = req.body.secret;
 
-    fetch('https://keycloak-airlabs.utm-labs-frequentis.com/auth/realms/swim/protocol/openid-connect/token', {
+    fetch(keykloakendpoint, {
         method: 'POST',
         body: 'grant_type=client_credentials&client_id=' + client + '&client_secret=' + secret,
         headers: {
