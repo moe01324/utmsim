@@ -38,15 +38,18 @@
             <input type="text" name="dronereg" id="dronereg" class="block" placeholder="Drone Registration UUID">
             <label id="labelicao" for="icao" class="block_label">ICAO ID</label>
             <input type="text" name="icao" id="icao" class="block" placeholder="AE064E">
-            <label id="labelaltitude" for="altitude" class="block_label">Max Altitude (m)</label>
-            <input type="text" name="altitude" id="altitude" class="block" onkeyup="enableSim()" placeholder="Max Altitude (m)">
+            <label id="labelaltitude" for="altitude" class="block_label">Altitude WGS84 (m)</label>
+            <input type="text" name="altitude" id="altitude" class="block" onkeyup="enableSim()" placeholder="Altitude WGS84 (m)">
             <label id="labelspeed" for="speed" class="block_label">Speed (km/h)</label>
             <input type="text" name="speed" id="speed" class="block" onkeyup="enableSim()" placeholder="Speed (km/h)">
             <button id="start" onclick="simulateDrone()" class="block" disabled>Simulate Drone Flight</button>
             <button id="rogueup" onclick="rogueUp()" class="button_half"  disabled>Rogue North</button>
             <button id="rogueright" onclick="rogueRight()" class="button_half" disabled>Rogue East</button>
             <button id="land" onclick="land()" disabled class="block">Land</button>
-            <button id="infobutton" onclick="showInfo()" class="button_half" style="margin-top: 70px;">Info</button>
+     
+        <div class="modallink" id="modallink" name="modallink">
+            <a href="#demo-modal">Info</a>
+        </div>
             
         </div>
         <div class="box d">
@@ -65,7 +68,8 @@
         </div>
       </div>
 
-    <div id="info" hidden>
+    <div class="modal" id="demo-modal" hidden>
+        <div class="modal__content">
         <b>UTM Drone Simulator</b>
         </br></br>
         (*) Connected to NBD-UTM instance. https://smartsis-airlabs.utm-labs-frequentis.com/
@@ -73,6 +77,8 @@
         (*) Alert Subscriptions are needed for alert ack
         </br></br>
         (*) OP Subscriptions are needed fo close
+        </br></br>
+        (*) Note: Altitude is the "middle value". Uncertainity of 10m is added via the according computeOP call.
         </br></br>
         (*) Note: Click the "rogue" button again to send the drone back to the nominal flight path.
         </br></br>
@@ -84,8 +90,10 @@
         </br></br>
         (*) version 22112022
         </br></br>
+   
+        <a href="#" class="modal__close">&times;</a>
+    
     </div>
-
     <script>
         var token = "";
         var access_token = "";
@@ -105,7 +113,6 @@
         }else {
             document.getElementById("geojson").style.display = "none";
         }
-        
 
         // a new OP element every x seconds
         var elementTimer = 300;
@@ -133,10 +140,18 @@
         // access token from https://www.mapbox.com/ - free
         mapboxgl.accessToken = 'pk.eyJ1IjoibW9lMDEzMjUiLCJhIjoiY2wwbzlxcTVpMGV1MzNvbnRmMmNlOWdzayJ9.YbJY5mSL7Xrymf8k24Sfcg';
 
+        var utmcenterlat = 48.19908;
+        var utmcenterlng = 16.4138;
+
+        if(localStorage.getItem('utmcenterlat')){
+            utmcenterlat = localStorage.getItem('utmcenterlat');
+            utmcenterlng = localStorage.getItem('utmcenterlng');
+          }
+
         const map = new mapboxgl.Map({
             container: 'map',
             style: 'mapbox://styles/mapbox/streets-v11',
-            center: [16.4138, 48.19908],
+            center: [utmcenterlng, utmcenterlat],
             zoom: 12
         }
         );
@@ -212,6 +227,9 @@
             );
 
             map.on('click', (e) => {
+                const center = map.getCenter(); map.getCenter();
+                localStorage.utmcenterlat = center.lat;
+                localStorage.utmcenterlng = center.lng;
                 const features = map.queryRenderedFeatures(e.point, {
                     layers: ['measure-points']
                 });
@@ -310,6 +328,7 @@
 
         function showInfo() {
             document.getElementById("info").hidden = !document.getElementById("info").hidden;
+            
         }
 
         function rogueUp() {
@@ -397,17 +416,17 @@
             }
 
             if (landed == 1) {
-                localaltitude = 1;
+                localaltitude = 0;
                 landed = 2;
             }
 
             bo.altitudes = [{
-                "altitude": localaltitude * 0.9,
-                "altitude_accuracy": 98.6,
-                "altitude_crs": "EPSG4979",
-                "altitude_data_age": 20.5,
+                "altitude": localaltitude,
+                "altitude_accuracy": 0.99,
+                "altitude_crs": "WGS84",
+                "altitude_data_age": 1,
                 "altitude_type": "ABOVE_ELLIPSOID",
-                "determination_method": "BAROMETRIC"
+                "determination_method": "GNSS_BASED"
             }];
 
             var coord = path_pos.features[pathnumber];
@@ -437,8 +456,8 @@
             bo.position = {
                 "latitude": coord[1],
                 "longitude": coord[0],
-                "position_accuracy": 20,
-                "position_crs": "EPSG4979",
+                "position_accuracy": 0.99,
+                "position_crs": "WGS84",
                 "position_data_age": 1
             };
             bo.acquisition_datetime = new Date();
@@ -509,7 +528,7 @@
                 "altitudeCRS": "WGS84",
                 "positionUncertainty": 0.00040,
                 "altitudeUncertainty": 10,
-                "timingUncertainty": 10,
+                "timingUncertainty": 30,
                 "altitudeType": "ABOVE_ELLIPSOID",
                 trajectoryElements
             };
@@ -524,7 +543,7 @@
             op.flightDetails = [{
                 "flightNumber": "null",
                 "flightType": "null",
-                "flightComment": "Flight comments",
+                "flightComment": "UTM SIM Flight",
                 "maxFlightSpeedKnots": 500.0
             }];
             op.priority = {
@@ -799,7 +818,7 @@
             localStorage.utmspeed = document.getElementById("speed").value;
             localStorage.utmdronereg = document.getElementById("dronereg").value;
             localStorage.utmoptitle = document.getElementById("optitle").value;
-
+            localStorage.utmicao = document.getElementById("icao").value;
         }
 
         function setToken(token) {
