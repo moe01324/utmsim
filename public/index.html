@@ -15,15 +15,64 @@
 
 <body>
 
-    <div id="map"></div>
+    <div class="wrapper">
+        <div class="box a">
+            <div id="title" name="title" class="title">UTM Drone Simulator</div>
+                <label id="labelclient" for="client" class="block_label">Client ID</label>
+                <input type="text" name="client" id="client" class="block" onkeyup="saveCredentials()" placeholder="Client ID">
+                <label id="labelsecret" for="secret" class="block_label">Client Secret</label>
+                <input type="text" name="secret" class="block" id="secret" onkeyup="saveCredentials()" placeholder="Client Secret">
+                <button id="authenticate" class="button_half" onclick="authServer()">Authenticate</button>
+                <label id="labelbearer" for="bearer"class="block_label" >Bearer Token</label>
+            <input type="text" name="bearer" id="bearer" class="block" onkeyup="setTokenManually()" placeholder="Bearer Token">
+            
+        </div>
+        <div class="b">
+            <div id="map" ></div>
+            <div id="distance" class="distance-container"></div>
+        </div>
+        <div class="box c">
+            <label id="labelidentifier" for="identifier" class="block_label">Drone Identifier</label>
+            <input type="text" name="identifier" id="identifier" class="block" onkeyup="enableSim()" placeholder="Drone Identifier">
+            <label id="labeldronereg" for="dronereg" class="block_label">Drone Registration ID</label>
+            <input type="text" name="dronereg" id="dronereg" class="block" placeholder="Drone Registration UUID">
+            <label id="labelicao" for="icao" class="block_label">ICAO ID</label>
+            <input type="text" name="icao" id="icao" class="block" placeholder="AE064E">
+            <label id="labelaltitude" for="altitude" class="block_label">Max Altitude (m)</label>
+            <input type="text" name="altitude" id="altitude" class="block" onkeyup="enableSim()" placeholder="Max Altitude (m)">
+            <label id="labelspeed" for="speed" class="block_label">Speed (km/h)</label>
+            <input type="text" name="speed" id="speed" class="block" onkeyup="enableSim()" placeholder="Speed (km/h)">
+            <button id="start" onclick="simulateDrone()" class="block" disabled>Simulate Drone Flight</button>
+            <button id="rogueup" onclick="rogueUp()" class="button_half"  disabled>Rogue North</button>
+            <button id="rogueright" onclick="rogueRight()" class="button_half" disabled>Rogue East</button>
+            <button id="land" onclick="land()" disabled class="block">Land</button>
+            <button id="infobutton" onclick="showInfo()" class="button_half" style="margin-top: 70px;">Info</button>
+            
+        </div>
+        <div class="box d">
+            <label id="labeltime" for="time" class="block">Estimated Flighttime (min)</label>
+            <input type="text" name="time" id="time" class="block" placeholder="Estimated Flighttime (min)" readonly>
+            <label id="starttimelabel" for="starttime" class="block">Operation Plan Start Time UTC</label>
+            <input type="text" name="starttime" id="starttime" class="block" placeholder="2022-04-04T23:28:56.782Z">
+            <label id="optitlelabel" for="optitle" class="block">Operation Plan Title</label>
+            <input type="text" name="optitle" id="optitle" class="block" placeholder="OP Title">
+            <button id="flightplan" onclick="makeFlightplan()" disabled class="block">Request Operation Plan</button>
+            <button id="takeoff" onclick="takeoff()" disabled class="block">Request Takeoff</button>
+            <button id="ack" onclick="ackAlert()" class="block" disabled>Ack Alert</button>
+            <button id="close" onclick="closeOP()" disabled class="block">Close OP Stop Flight</button>
+            <button id="clear" onclick="clearMap()" class="block">Stop & Clear Simulation</button>
+            <input type="text" name="geojson" id="geojson" class="block" placeholder="LineString GeoJson ONLY" onkeyup="loadJSON()">     
+        </div>
+      </div>
+
     <div id="info" hidden>
         <b>UTM Drone Simulator</b>
         </br></br>
         (*) Connected to NBD-UTM instance. https://smartsis-airlabs.utm-labs-frequentis.com/
         </br></br>
-        (*) Alert Subscriptions are done via organization "utmsim" - needed for alert ack
+        (*) Alert Subscriptions are needed for alert ack
         </br></br>
-        (*) OP Subscriptions are done via organization "utmsim" - needed fo close
+        (*) OP Subscriptions are needed fo close
         </br></br>
         (*) Note: Click the "rogue" button again to send the drone back to the nominal flight path.
         </br></br>
@@ -33,41 +82,9 @@
         </br></br>
         (*) Sources at: https://github.com/moe01324/utmsim
         </br></br>
-        (*) version 28092022
+        (*) version 22112022
         </br></br>
     </div>
-    <div id="distance" class="distance-container"></div>
-    <div id="title" name="title">UTM Drone Simulator</div>
-    <label id="labelidentifier" for="identifier">Drone Identifier</label>
-    <label id="labeldronereg" for="dronereg">Drone Registration</label>
-    <label id="labelaltitude" for="altitude">Max Altitude (m)</label>
-    <label id="labelspeed" for="speed">Speed (km/h)</label>
-    <label id="labeltime" for="time">Estimated Flighttime (min)</label>
-    <input type="text" name="identifier" id="identifier" onkeyup="enableSim()" placeholder="Drone Identifier">
-    <input type="text" name="dronereg" id="dronereg" placeholder="Drone Registration UUID">
-    <label id="starttimelabel" for="starttime">Operation Plan Start Time</label>
-    <input type="text" name="starttime" id="starttime" placeholder="2022-04-04T23:28:56.782Z">
-    <input type="text" name="altitude" id="altitude" onkeyup="enableSim()" placeholder="Max Altitude (m)">
-    <input type="text" name="speed" id="speed" onkeyup="enableSim()" placeholder="Speed (km/h)">
-    <input type="text" name="time" id="time" placeholder="Estimated Flighttime (min)" readonly>
-    <button id="start" onclick="simulateDrone()" disabled>Simulate Drone Flight</button>
-    <button id="flightplan" onclick="makeFlightplan()" disabled>Request Operation Plan</button>
-    <button id="takeoff" onclick="takeoff()" disabled>Request Takeoff</button>
-    <button id="close" onclick="closeOP()" disabled>Close OP Stop Flight</button>
-    <button id="ack" onclick="ackAlert()" disabled>Ack Alert</button>
-    <label id="labelclient" for="client">Client ID</label>
-    <input type="text" name="client" id="client" onkeyup="saveCredentials()" placeholder="Client ID">
-    <label id="labelsecret" for="secret">Client Secret</label>
-    <input type="text" name="secret" id="secret" onkeyup="saveCredentials()" placeholder="Client Secret">
-    <button id="authenticate" onclick="authServer()">Authenticate</button>
-    <label id="labelbearer" for="bearer">Bearer Token</label>
-    <input type="text" name="bearer" id="bearer" onkeyup="setTokenManually()" placeholder="Bearer Token">
-    <button id="clear" onclick="clearMap()">Stop & Clear Simulation</button>
-    <button id="infobutton" onclick="showInfo()">Info</button>
-    <button id="rogueup" onclick="rogueUp()" disabled>Rogue North</button>
-    <button id="rogueright" onclick="rogueRight()" disabled>Rogue East</button>
-    <button id="land" onclick="land()" disabled >Land</button>
-    <input type="text" name="geojson" id="geojson" placeholder="LineString GeoJson ONLY" onkeyup="loadJSON()">
 
     <script>
         var token = "";
@@ -104,6 +121,8 @@
         document.getElementById("altitude").value = localStorage.getItem('utmaltitude');
         document.getElementById("identifier").value = localStorage.getItem('utmidentifier');
         document.getElementById("dronereg").value = localStorage.getItem('utmdronereg');
+        document.getElementById("icao").value = localStorage.getItem('utmicao');
+        document.getElementById("optitle").value = localStorage.getItem('utmoptitle');
 
         var newDateObj = new Date();
         newDateObj.setTime(newDateObj.getTime() + (5 * 60 * 1000));
@@ -323,7 +342,7 @@
                 opID = UUIDGeneratorBrowser();
             }
             bo.operation_id = opID,
-                bo.identifications = [{
+            bo.identifications = [{
                     "confidence": 1,
                     "type": "ID_CALLSIGN",
                     "value": "" + ident + ""
@@ -331,7 +350,7 @@
                 {
                     "confidence": 1,
                     "type": "ID_ICAO",
-                    "value": "AE064E"
+                    "value": "" + icao + ""
                 }];
             bo.classification_info = {
                 "classifications": [{
@@ -460,6 +479,8 @@
             opID = UUIDGeneratorBrowser();
             var ident = document.getElementById("identifier").value;
             var dronereg = document.getElementById("dronereg").value;
+            var icao = document.getElementById("icao").value;
+            var optitle = document.getElementById("optitle").value;
             var altitude = document.getElementById("altitude").value;
             var speed = document.getElementById("speed").value;
 
@@ -486,7 +507,7 @@
             op.operationTrajectory = {
                 "positionCRS": "WGS84",
                 "altitudeCRS": "WGS84",
-                "positionUncertainty": 50,
+                "positionUncertainty": 0.00040,
                 "altitudeUncertainty": 10,
                 "timingUncertainty": 10,
                 "altitudeType": "ABOVE_ELLIPSOID",
@@ -520,7 +541,7 @@
                 "fax": null
             };
             op.publicInfo = {
-                "title": "FRQ Simulator 3020",
+                "title": optitle,
                 "description": "FRQ Simulator 3020"
             };
             op.mission = null;
@@ -777,6 +798,8 @@
             localStorage.utmaltitude = document.getElementById("altitude").value;
             localStorage.utmspeed = document.getElementById("speed").value;
             localStorage.utmdronereg = document.getElementById("dronereg").value;
+            localStorage.utmoptitle = document.getElementById("optitle").value;
+
         }
 
         function setToken(token) {

@@ -1,4 +1,5 @@
 console.log('UTM Drone Sim Server running');
+require("dotenv").config()
 
 const express = require('express');
 const fetch = require('node-fetch');
@@ -13,7 +14,6 @@ const endendpoint = process.env.endendpoint // https://operation-service.utm-lab
 const activateendpoint = process.env.activateendpoint // https://operation-service.utm-labs-frequentis.com/api/activateOperationPlan
 const keykloakendpoint = process.env.keycloakendpoint // https://keycloak-airlabs.utm-labs-frequentis.com/auth/realms/swim/protocol/openid-connect/token
 const computeendpoint = process.env.computeendpoint //https://operation-service.utm-labs-frequentis.com/api/computeVolumeFromTrajectoryAndMinimumSeparation
-
 
 app.use(express.static('public'));
 app.use(express.json({limit: '50mb'}));
@@ -43,7 +43,7 @@ app.post('/simulate', (req, res) => {
 
     fetch(telemetryendpoint, requestOptions)
         .then(response => response.text())
-      //  .then(result => console.log(result))
+        .then(result => console.log(result))
         .catch(error => console.log('error', error));
 
     res.status(201).json({
@@ -118,23 +118,14 @@ app.post('/declareEndOfFlight', (req, res) => {
     var myHeaders = new Headers();
     myHeaders.append("Content-Type", "application/json");
     myHeaders.append("Authorization", "Bearer " + req.body.access_token);
-    delete req.body['access_token'];
-
-    ack = new Object();
-    ack.operationPlanId = req.body['operationPlanId'];
-
-    let thisop = OPs.find(thisop => thisop.operationPlanId === ack.operationPlanId);
-    
-    ack.operationPlanVersion = thisop.version;
 
     var requestOptions = {
         method: 'POST',
         headers: myHeaders,
-        body: JSON.stringify(ack),
         redirect: 'follow'
     };
 
-    fetch(endendpoint, requestOptions)
+    fetch(endendpoint+"/"+req.body.operationPlanId, requestOptions)
         .then(response => response.text())
          .then(result => console.log(result))
         .catch(error => console.log('error', error));

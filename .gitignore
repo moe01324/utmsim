@@ -3320,3 +3320,13 @@ node_modules/whatwg-url/lib/url-state-machine.js
 node_modules/whatwg-url/lib/URL.js
 node_modules/whatwg-url/lib/utils.js
 package-lock.json
+node_modules/dotenv/CHANGELOG.md
+node_modules/dotenv/config.d.ts
+node_modules/dotenv/config.js
+node_modules/dotenv/LICENSE
+node_modules/dotenv/package.json
+node_modules/dotenv/README.md
+node_modules/dotenv/lib/cli-options.js
+node_modules/dotenv/lib/env-options.js
+node_modules/dotenv/lib/main.d.ts
+node_modules/dotenv/lib/main.js

@@ -1,222 +1,87 @@
-body { margin: 0; padding: 0; }
-#map { position: absolute; top: 0; bottom: 0; width: 80%; }
+  .wrapper {
+          display: grid;
+          grid-gap: 10px;
+          grid-template-columns: 20% 20% 58%;
+
+          color: #444;
+      }
+  
+      .box {
+          background-color: #444;
+          color: #fff;
+          border-radius: 5px;
+          padding: 20px;
+          font-size: 150%;
+          display: block;
+      }
+  
+      .a {
+          grid-column: 1 / span 2;
+         
+      }
+      .b {
+          grid-column: 3 ;
+          grid-row: 1 / span 3;
+        
+      }
+      .c {
+          grid-column: 1 ;
+          grid-row: 2 ;
+      
+      }
+      .d {
+          grid-column: 2 ;
+          grid-row: 2 ;
+   
+      }
+
+
+body { margin: 5; padding: 5; background-color: #444;}
+#map { position: absolute; top: 0; bottom: 0; width: 58%; border-radius: 5px; margin: 8px;}
 
 body     { font-family: "Gill Sans Extrabold", Helvetica, sans-serif }
 
-#title {
-    position: absolute;
-    left: 85%;
-    top: 10px;
-    width: 15%;
-    font-size: x-large;
+.block {
+    display: grid;
+    margin: 10px;
+    font-size: 18px;
+    width: 100%;
+    text-align: center;
 }
 
-#labelclient {
-    position: absolute;
-    left: 85%;
-    top: 50px;
-    width: 10%;
+.block_label {
+    display: grid;
+    margin: 5px;
+    font-size: 16px;
+    width: 100%;
+    text-align: center;
 }
-#client {
-    position: absolute;
-    left: 85%;
-    top: 70px;
-    width: 10%;
+.button {
+    display: grid;
+    margin: 5%;
+    font-size: 18px;
+    width: 80%;
 }
-#labelsecret {
-    position: absolute;
-    left: 85%;
-    top: 100px;
-    width: 10%;
-}
-#secret {
-    position: absolute;
-    left: 85%;
-    top: 120px;
-    width: 10%;
-}
-#authenticate {
-    position: absolute;
-    left: 85%;
-    top: 150px;
-    width: 10%;
-}
-#labelbearer {
-    position: absolute;
-    left: 85%;
-    top: 180px;
-    width: 10%;
-}
-#bearer {
-    position: absolute;
-    left: 85%;
-    top: 200px;
-    width: 10%;
+.button_half {
+    margin-left: 5%;
+
+    font-size: 18px;
+    width: 37%;
 }
 
-#labelidentifier {
-    position: absolute;
-    left: 85%;
-    top: 250px;
-    width: 10%;
+.title {
+    display: grid;
+    margin: 10px;
+    font-size: 30px;
+    width: 100%;
+    text-align: center;
 }
-#identifier {
-    position: absolute;
-    left: 85%;
-    top: 270px;
-    width: 10%;
-}
-
-#labeldronereg {
-    position: absolute;
-    left: 85%;
-    top: 300px;
-    width: 10%;
-}
-#dronereg {
-    position: absolute;
-    left: 85%;
-    top: 320px;
-    width: 10%;
-}
-
-#labelaltitude {
-    position: absolute;
-    left: 85%;
-    top: 350px;
-    width: 10%;
-}
-#altitude {
-    position: absolute;
-    left: 85%;
-    top: 370px;
-    width: 10%;
-}
-#labelspeed {
-    position: absolute;
-    left: 85%;
-    top: 400px;
-    width: 10%;
-}
-#speed {
-    position: absolute;
-    left:85%;
-    top: 420px;
-    width: 10%;
-}
-#labeltime {
-    position: absolute;
-    left: 85%;
-    top: 450px;
-    width: 10%;
-}
-#time {
-    position: absolute;
-    left: 85%;
-    top: 470px;
-    width: 10%;
-}
-
-#starttimelabel {
-    position: absolute;
-    left: 85%;
-    top: 500px;
-    width: 10%;
-}
-
-#starttime {
-    position: absolute;
-    left: 85%;
-    top: 520px;
-    width: 10%;
-}
-
-#flightplan {
-    position: absolute;
-    left: 85%;
-    top: 560px;
-    width: 10%;
-}
-
-#takeoff {
-    position: absolute;
-    left: 85%;
-    top: 600px;
-    width: 10%;
-}
-
-#start {
-    position: absolute;
-    left: 85%;
-    top: 640px;
-    width: 10%;
-}
-
-#rogueup {
-    position: absolute;
-    right: 10%;
-    top: 680px;
-    width: 5%;
-}
-
-#rogueright {
-    position: absolute;
-    right: 5%;
-    top: 680px;
-    width: 5%;
-}
-
-#land {
-    position: absolute;
-    right: 5%;
-    top: 720px;
-    width: 10%;
-}
-
-#ack {
-    position: absolute;
-    left: 85%;
-    top: 760px;
-    width: 10%;
-}
-
-#close {
-    position: absolute;
-    left: 85%;
-    top: 800px;
-    width: 10%;
-}
-
-#clear {
-    position: absolute;
-    right: 5%;
-    top: 840px;
-    width: 10%;
-}
-
-
 
 #geojson {
     position: absolute;
     right: 5%;
     top: 940px;
     width: 10%;
-}
-
-
-
-#infobutton {
-  position: absolute;
-  right: 10px;
-  bottom: 10px;
-  width: 3%;
-}
-
-.distance-container {
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  z-index: 1;
 }
 
 #info {
@@ -233,6 +98,14 @@ body     { font-family: "Gill Sans Extrabold", Helvetica, sans-serif }
   border-style: double;
 }
 
+.distance-container {
+    position: relative;
+    top: 3px;
+    left: 10px;
+    width: 20%;
+    z-index: 1;
+  }
+
 .distance-container>* {
   background-color: rgba(0, 0, 0, 0.5);
   color: #fff;
@@ -243,5 +116,3 @@ body     { font-family: "Gill Sans Extrabold", Helvetica, sans-serif }
   padding: 5px 10px;
   border-radius: 3px;
 }
-
-

@@ -5,6 +5,7 @@
   "main": "server.js",
   "dependencies": {
     "@turf/turf": "^6.5.0",
+    "dotenv": "^16.0.3",
     "express": "^4.17.3",
     "mapbox": "^1.0.0-beta10",
     "mapbox-gl": "^2.7.0",
@@ -12,7 +13,6 @@
     "uuid": "^8.3.2",
     "uuidv4": "^6.2.12"
   },
-  "devDependencies": {},
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node server.js"
