@@ -8,7 +8,7 @@ const app = express();
 
 
 const telemetryendpoint = process.env.telemetryendpoint // https://telemetry-endpoint.utm-labs-frequentis.com/pose
-const opendpoint = process.env.opendpoint // https://operation-service.utm-labs-frequentis.com//api/authorizeOperationPlan
+const opendpoint = process.env.opendpoint // https://operation-service.utm-labs-frequentis.com/api/proposeAndAuthorizeOperationPlan
 const ackendpoint = process.env.ackendpoint // https://alerting-endpoint.utm-labs-frequentis.com/processAck
 const endendpoint = process.env.endendpoint // https://operation-service.utm-labs-frequentis.com/api/declareEndOfFlight
 const activateendpoint = process.env.activateendpoint // https://operation-service.utm-labs-frequentis.com/api/activateOperationPlan
@@ -163,17 +163,16 @@ app.post('/takeoff', (req, res) => {
     var myHeaders = new Headers();
     myHeaders.append("Content-Type", "application/json");
     myHeaders.append("Authorization", "Bearer " + req.body.access_token);
-    delete req.body['access_token'];
+
     var requestOptions = {
         method: 'POST',
         headers: myHeaders,
-        body: JSON.stringify(req.body),
         redirect: 'follow'
     };
 
-    fetch(activateendpoint, requestOptions)
+    fetch(activateendpoint+"/"+req.body.operationPlanId, requestOptions)
         .then(response => response.text())
-       .then(result => console.log(result))
+         .then(result => console.log(result))
         .catch(error => console.log('error', error));
 
     res.status(201).json({
