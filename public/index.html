@@ -5,8 +5,8 @@
     <meta charset="utf-8">
     <title>UTM Drone Simulator</title>
     <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
-    <link href="https://api.mapbox.com/mapbox-gl-js/v2.7.0/mapbox-gl.css" rel="stylesheet">
-    <script src="https://api.mapbox.com/mapbox-gl-js/v2.7.0/mapbox-gl.js"></script>
+    <link href="https://api.mapbox.com/mapbox-gl-js/v2.11.0/mapbox-gl.css" rel="stylesheet">
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.11.0/mapbox-gl.js"></script>
     <script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
 
     <link rel="stylesheet" type="text/css" href="style.css" />
@@ -88,7 +88,7 @@
         </br></br>
         (*) Sources at: https://github.com/moe01324/utmsim
         </br></br>
-        (*) version 10.12.2022
+        (*) version 21.12.2022
         </br></br>
    
         <a href="#" class="modal__close">&times;</a>
@@ -152,7 +152,12 @@
             container: 'map',
             style: 'mapbox://styles/mapbox/streets-v11',
             center: [utmcenterlng, utmcenterlat],
-            zoom: 12
+            zoom: 12,
+            //style: 'mapbox://styles/mapbox/light-v11',
+            pitch: 45,
+            //bearing: -17.6,
+            container: 'map',
+            antialias: true
         }
         );
 
@@ -189,6 +194,57 @@
         el.style.height = `50px`;
         el.style.backgroundSize = '100%';
         const dronemarker = new mapboxgl.Marker(el);
+
+        map.on('style.load', () => {
+            // Insert the layer beneath any symbol layer.
+            const layers = map.getStyle().layers;
+            const labelLayerId = layers.find(
+            (layer) => layer.type === 'symbol' && layer.layout['text-field']
+            ).id;
+            
+            // The 'building' layer in the Mapbox Streets
+            // vector tileset contains building height data
+            // from OpenStreetMap.
+            map.addLayer(
+            {
+            'id': 'add-3d-buildings',
+            'source': 'composite',
+            'source-layer': 'building',
+            'filter': ['==', 'extrude', 'true'],
+            'type': 'fill-extrusion',
+            'minzoom': 15,
+            'paint': {
+            'fill-extrusion-color': '#aaa',
+            
+            // Use an 'interpolate' expression to
+            // add a smooth transition effect to
+            // the buildings as the user zooms in.
+            'fill-extrusion-height': [
+            'interpolate',
+            ['linear'],
+            ['zoom'],
+            15,
+            0,
+            15.05,
+            ['get', 'height']
+            ],
+            'fill-extrusion-base': [
+            'interpolate',
+            ['linear'],
+            ['zoom'],
+            15,
+            0,
+            15.05,
+            ['get', 'min_height']
+            ],
+            'fill-extrusion-opacity': 0.6
+            }
+            },
+            labelLayerId
+            );
+        });
+
+
 
         map.on('load', () => {
             map.addSource('geojson', {
