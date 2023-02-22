@@ -8,13 +8,10 @@
     <link href="https://api.mapbox.com/mapbox-gl-js/v2.11.0/mapbox-gl.css" rel="stylesheet">
     <script src="https://api.mapbox.com/mapbox-gl-js/v2.11.0/mapbox-gl.js"></script>
     <script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
-
     <link rel="stylesheet" type="text/css" href="style.css" />
-
 </head>
 
 <body>
-
     <div class="wrapper">
         <div class="box a">
             <div id="title" name="title" class="title">UTM Drone Simulator</div>
@@ -64,7 +61,7 @@
             <button id="ack" onclick="ackAlert()" class="block" disabled>Ack Alert</button>
             <button id="close" onclick="closeOP()" disabled class="block">Close OP Stop Flight</button>
             <button id="clear" onclick="clearMap()" class="block">Stop & Clear Simulation</button>
-            <input type="text" name="geojson" id="geojson" class="block" placeholder="LineString GeoJson ONLY" onkeyup="loadJSON()">     
+            <input type="text" name="geojson" id="geojson" class="block" placeholder="ZONE GEOJSON" onkeyup="loadJSONZone()">     
         </div>
       </div>
 
@@ -84,7 +81,7 @@
         </br></br>
         (*) Note: URL parameter "?debug" enables a bit more client console logging.
         </br></br>
-        (*) Note: URL parameter "?loadjson" enables a field to directly use a geojson linestring as a OP path.
+        (*) Note: URL parameter "?loadjson" enables a field to directly load a zone.
         </br></br>
         (*) Sources at: https://github.com/moe01324/utmsim
         </br></br>
@@ -163,6 +160,11 @@
 
         // GeoJSON object to hold our measurement features
         const geojson = {
+            'type': 'FeatureCollection',
+            'features': []
+        };
+
+        const geojsonzone = {
             'type': 'FeatureCollection',
             'features': []
         };
@@ -247,6 +249,39 @@
 
 
         map.on('load', () => {
+
+            map.addSource('geojsonzone', {
+            'type': 'geojson',
+            /*
+             * Each feature in this GeoJSON file contains values for
+             * `properties.height`, `properties.base_height`,
+             * and `properties.color`.
+             * In `addLayer` you will use expressions to set the new
+             * layer's paint properties based on these values.
+             */
+            'data': geojsonzone
+            });
+            map.addLayer({
+                'id': 'room-extrusion',
+                'type': 'fill-extrusion',
+                'source': 'geojsonzone',
+                'paint': {
+                    // Get the `fill-extrusion-color` from the source `color` property.
+                    'fill-extrusion-color': "orange",
+
+                    // Get `fill-extrusion-height` from the source `height` property.
+                    'fill-extrusion-height': 999,
+
+                    // Get `fill-extrusion-base` from the source `base_height` property.
+                    'fill-extrusion-base': 333,
+
+                    // Make extrusions slightly opaque to see through indoor walls.
+                    'fill-extrusion-opacity': 0.5
+                }
+            });
+
+
+
             map.addSource('geojson', {
                 'type': 'geojson',
                 'data': geojson
@@ -367,6 +402,7 @@
         function clearMap() {
             distanceContainer.innerHTML = '';
             geojson.features.length = 0;
+            geojsonzone.features.length = 0;
             path_pos.features.length = 0;
             path_plan.features.length = 0;
             landed = 0;
@@ -836,6 +872,16 @@
                 var geo = document.getElementById("geojson").value;
                 const obj = JSON.parse(geo);
                 map.getSource('geojson').setData(obj);
+            }
+
+            
+        }
+
+        function loadJSONZone() {
+            if (document.getElementById("geojson").value !== "" ) {
+                var geo = document.getElementById("geojson").value;
+                const obj = JSON.parse(geo);
+                map.getSource('geojsonzone').setData(obj);
             }
 
             
