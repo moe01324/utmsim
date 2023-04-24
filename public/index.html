@@ -2,951 +2,1650 @@
 <html>
 
 <head>
-    <meta charset="utf-8">
-    <title>UTM Drone Simulator</title>
-    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
-    <link href="https://api.mapbox.com/mapbox-gl-js/v2.11.0/mapbox-gl.css" rel="stylesheet">
-    <script src="https://api.mapbox.com/mapbox-gl-js/v2.11.0/mapbox-gl.js"></script>
-    <script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
-    <link rel="stylesheet" type="text/css" href="style.css" />
+	<meta charset="utf-8">
+	<title>UTM Drone Simulator</title>
+	<meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+	<link href="https://api.mapbox.com/mapbox-gl-js/v2.11.0/mapbox-gl.css" rel="stylesheet">
+	<script src="https://api.mapbox.com/mapbox-gl-js/v2.11.0/mapbox-gl.js"></script>
+	<script src="turf.min.js"></script>
+	<link rel="stylesheet" type="text/css" href="style.css" />
 </head>
 
 <body>
-    <div class="wrapper">
-        <div class="box a">
-            <div id="title" name="title" class="title">UTM Drone Simulator</div>
-                <label id="labelclient" for="client" class="block_label">Client ID</label>
-                <input type="text" name="client" id="client" class="block" onkeyup="saveCredentials()" placeholder="Client ID">
-                <label id="labelsecret" for="secret" class="block_label">Client Secret</label>
-                <input type="text" name="secret" class="block" id="secret" onkeyup="saveCredentials()" placeholder="Client Secret">
-                <button id="authenticate" class="button_half" onclick="authServer()">Authenticate</button>
-                <label id="labelbearer" for="bearer"class="block_label" >Bearer Token</label>
-            <input type="text" name="bearer" id="bearer" class="block" onkeyup="setTokenManually()" placeholder="Bearer Token">
-            
-        </div>
-        <div class="b">
-            <div id="map" ></div>
-            <div id="distance" class="distance-container"></div>
-        </div>
-        <div class="box c">
-            <label id="labelidentifier" for="identifier" class="block_label">Drone Identifier</label>
-            <input type="text" name="identifier" id="identifier" class="block" onkeyup="enableSim()" placeholder="Drone Identifier">
-            <label id="labeldronereg" for="dronereg" class="block_label">Drone Registration ID</label>
-            <input type="text" name="dronereg" id="dronereg" class="block" placeholder="Drone Registration UUID">
-            <label id="labelicao" for="icao" class="block_label">ICAO ID</label>
-            <input type="text" name="icao" id="icao" class="block" placeholder="AE064E">
-            <label id="labelaltitude" for="altitude" class="block_label">Altitude WGS84 (m)</label>
-            <input type="text" name="altitude" id="altitude" class="block" onkeyup="enableSim()" placeholder="Altitude WGS84 (m)">
-            <label id="labelspeed" for="speed" class="block_label">Speed (km/h)</label>
-            <input type="text" name="speed" id="speed" class="block" onkeyup="enableSim()" placeholder="Speed (km/h)">
-            <button id="start" onclick="simulateDrone()" class="block" disabled>Simulate Drone Flight</button>
-            <button id="rogueup" onclick="rogueUp()" class="button_half"  disabled>Rogue North</button>
-            <button id="rogueright" onclick="rogueRight()" class="button_half" disabled>Rogue East</button>
-            <button id="land" onclick="land()" disabled class="block">Land</button>
-     
-        <div class="modallink" id="modallink" name="modallink">
-            <a href="#demo-modal">Info</a>
-        </div>
-            
-        </div>
-        <div class="box d">
-            <label id="labeltime" for="time" class="block">Estimated Flighttime (min)</label>
-            <input type="text" name="time" id="time" class="block" placeholder="Estimated Flighttime (min)" readonly>
-            <label id="starttimelabel" for="starttime" class="block">Operation Plan Start Time UTC</label>
-            <input type="text" name="starttime" id="starttime" class="block" placeholder="2022-04-04T23:28:56.782Z">
-            <label id="optitlelabel" for="optitle" class="block">Operation Plan Title</label>
-            <input type="text" name="optitle" id="optitle" class="block" placeholder="OP Title">
-            <button id="flightplan" onclick="makeFlightplan()" disabled class="block">Request Operation Plan</button>
-            <button id="takeoff" onclick="takeoff()" disabled class="block">Request Takeoff</button>
-            <button id="ack" onclick="ackAlert()" class="block" disabled>Ack Alert</button>
-            <button id="close" onclick="closeOP()" disabled class="block">Close OP Stop Flight</button>
-            <button id="clear" onclick="clearMap()" class="block">Stop & Clear Simulation</button>
-            <input type="text" name="geojson" id="geojson" class="block" placeholder="ZONE GEOJSON" onkeyup="loadJSONZone()">     
-        </div>
-      </div>
-
-    <div class="modal" id="demo-modal" hidden>
-        <div class="modal__content">
-        <b>UTM Drone Simulator</b>
-        </br></br>
-        (*) Connected to NBD-UTM instance. https://smartsis-airlabs.utm-labs-frequentis.com/
-        </br></br>
-        (*) Alert Subscriptions are needed for alert ack
-        </br></br>
-        (*) OP Subscriptions are needed fo close
-        </br></br>
-        (*) Note: Altitude is the "middle value". Uncertainity of 10m is added via the according computeOP call.
-        </br></br>
-        (*) Note: Click the "rogue" button again to send the drone back to the nominal flight path.
-        </br></br>
-        (*) Note: URL parameter "?debug" enables a bit more client console logging.
-        </br></br>
-        (*) Note: URL parameter "?loadjson" enables a field to directly load a zone.
-        </br></br>
-        (*) Sources at: https://github.com/moe01324/utmsim
-        </br></br>
-        (*) version 21.12.2022
-        </br></br>
-   
-        <a href="#" class="modal__close">&times;</a>
-    
-    </div>
-    <script>
-        var token = "";
-        var access_token = "";
-        var opID = "";
-        var opsaved;
-        var landed = 0;
-        var pathnumber = 0;
-        var altitude = 1;
-
-        const queryString = window.location.search;
-        const urlParams = new URLSearchParams(queryString);
-        const debug = urlParams.has('debug');
-        const loadjson = urlParams.has('loadjson');
-
-        if (loadjson){
-            document.getElementById("geojson").style.display = "visible";
-        }else {
-            document.getElementById("geojson").style.display = "none";
-        }
-
-        // a new OP element every x seconds
-        var elementTimer = 300;
-
-        var rogueActiveUp = false;
-        var roguevalueUp = 0;
-        var rogueActiveRight = false;
-        var roguevalueRight = 0;
-
-        document.getElementById("client").value = localStorage.getItem('utmclient');
-        document.getElementById("secret").value = localStorage.getItem('utmsecret');
-        document.getElementById("speed").value = localStorage.getItem('utmspeed');
-        document.getElementById("altitude").value = localStorage.getItem('utmaltitude');
-        document.getElementById("identifier").value = localStorage.getItem('utmidentifier');
-        document.getElementById("dronereg").value = localStorage.getItem('utmdronereg');
-        document.getElementById("icao").value = localStorage.getItem('utmicao');
-        document.getElementById("optitle").value = localStorage.getItem('utmoptitle');
-
-        var newDateObj = new Date();
-        newDateObj.setTime(newDateObj.getTime() + (5 * 60 * 1000));
-        document.getElementById("starttime").value = newDateObj.toJSON();
-
-        const distanceContainer = document.getElementById('distance');
-
-        // access token from https://www.mapbox.com/ - free
-        mapboxgl.accessToken = 'pk.eyJ1IjoibW9lMDEzMjUiLCJhIjoiY2wwbzlxcTVpMGV1MzNvbnRmMmNlOWdzayJ9.YbJY5mSL7Xrymf8k24Sfcg';
-
-        var utmcenterlat = 48.19908;
-        var utmcenterlng = 16.4138;
-
-        if(localStorage.getItem('utmcenterlat')){
-            utmcenterlat = localStorage.getItem('utmcenterlat');
-            utmcenterlng = localStorage.getItem('utmcenterlng');
-          }
-
-        const map = new mapboxgl.Map({
-            container: 'map',
-            style: 'mapbox://styles/mapbox/streets-v11',
-            center: [utmcenterlng, utmcenterlat],
-            zoom: 12,
-            //style: 'mapbox://styles/mapbox/light-v11',
-            pitch: 45,
-            //bearing: -17.6,
-            container: 'map',
-            antialias: true
-        }
-        );
-
-        // GeoJSON object to hold our measurement features
-        const geojson = {
-            'type': 'FeatureCollection',
-            'features': []
-        };
-
-        const geojsonzone = {
-            'type': 'FeatureCollection',
-            'features': []
-        };
-
-        const path_pos = {
-            'type': 'FeatureCollection',
-            'features': []
-        };
-
-        const path_plan = {
-            'type': 'FeatureCollection',
-            'features': []
-        };
-
-        // Used to draw a line between points
-        const linestring = {
-            'type': 'Feature',
-            'geometry': {
-                'type': 'LineString',
-                'coordinates': []
-            }
-        };
-
-        ///drone icon
-        const el = document.createElement('div');
-        el.className = 'marker';
-        el.style.backgroundImage = `url(drone3.png)`;
-        el.style.width = `50px`;
-        el.style.height = `50px`;
-        el.style.backgroundSize = '100%';
-        const dronemarker = new mapboxgl.Marker(el);
-
-        map.on('style.load', () => {
-            // Insert the layer beneath any symbol layer.
-            const layers = map.getStyle().layers;
-            const labelLayerId = layers.find(
-            (layer) => layer.type === 'symbol' && layer.layout['text-field']
-            ).id;
-            
-            // The 'building' layer in the Mapbox Streets
-            // vector tileset contains building height data
-            // from OpenStreetMap.
-            map.addLayer(
-            {
-            'id': 'add-3d-buildings',
-            'source': 'composite',
-            'source-layer': 'building',
-            'filter': ['==', 'extrude', 'true'],
-            'type': 'fill-extrusion',
-            'minzoom': 15,
-            'paint': {
-            'fill-extrusion-color': '#aaa',
-            
-            // Use an 'interpolate' expression to
-            // add a smooth transition effect to
-            // the buildings as the user zooms in.
-            'fill-extrusion-height': [
-            'interpolate',
-            ['linear'],
-            ['zoom'],
-            15,
-            0,
-            15.05,
-            ['get', 'height']
-            ],
-            'fill-extrusion-base': [
-            'interpolate',
-            ['linear'],
-            ['zoom'],
-            15,
-            0,
-            15.05,
-            ['get', 'min_height']
-            ],
-            'fill-extrusion-opacity': 0.6
-            }
-            },
-            labelLayerId
-            );
-        });
-
-
-
-        map.on('load', () => {
-
-            map.addSource('geojsonzone', {
-            'type': 'geojson',
-            /*
-             * Each feature in this GeoJSON file contains values for
-             * `properties.height`, `properties.base_height`,
-             * and `properties.color`.
-             * In `addLayer` you will use expressions to set the new
-             * layer's paint properties based on these values.
-             */
-            'data': geojsonzone
-            });
-            map.addLayer({
-                'id': 'room-extrusion',
-                'type': 'fill-extrusion',
-                'source': 'geojsonzone',
-                'paint': {
-                    // Get the `fill-extrusion-color` from the source `color` property.
-                    'fill-extrusion-color': "orange",
-
-                    // Get `fill-extrusion-height` from the source `height` property.
-                    'fill-extrusion-height': 999,
-
-                    // Get `fill-extrusion-base` from the source `base_height` property.
-                    'fill-extrusion-base': 333,
-
-                    // Make extrusions slightly opaque to see through indoor walls.
-                    'fill-extrusion-opacity': 0.5
-                }
-            });
-
-
-
-            map.addSource('geojson', {
-                'type': 'geojson',
-                'data': geojson
-            }
-            );
-
-            // Add styles to the map
-            map.addLayer({
-                id: 'measure-points',
-                type: 'circle',
-                source: 'geojson',
-                paint: {
-                    'circle-radius': 5,
-                    'circle-color': '#000'
-                },
-                filter: ['in', '$type', 'Point']
-            }
-            );
-
-            map.addLayer({
-                id: 'measure-lines',
-                type: 'line',
-                source: 'geojson',
-                layout: {
-                    'line-cap': 'round',
-                    'line-join': 'round'
-                },
-                paint: {
-                    'line-color': '#000',
-                    'line-width': 2.5
-                },
-                filter: ['in', '$type', 'LineString']
-            }
-            );
-
-            map.on('click', (e) => {
-                const center = map.getCenter(); map.getCenter();
-                localStorage.utmcenterlat = center.lat;
-                localStorage.utmcenterlng = center.lng;
-                const features = map.queryRenderedFeatures(e.point, {
-                    layers: ['measure-points']
-                });
-
-                // Remove the linestring from the group
-                // so we can redraw it based on the points collection.
-                if (geojson.features.length > 1) geojson.features.pop();
-
-                // Clear the distance container to populate it with a new value.
-                distanceContainer.innerHTML = '';
-
-                // If a feature was clicked, remove it from the map.
-                if (features.length) {
-                    const id = features[0].properties.id;
-                    geojson.features = geojson.features.filter((point) => point.properties.id !== id);
-                } else {
-                    const point = {
-                        'type': 'Feature',
-                        'geometry': {
-                            'type': 'Point',
-                            'coordinates': [e.lngLat.lng, e.lngLat.lat]
-                        },
-                        'properties': {
-                            'id': String(new Date().getTime())
-                        }
-                    };
-                    geojson.features.push(point);
-                }
-
-                if (geojson.features.length > 1) {
-                    linestring.geometry.coordinates = geojson.features.map((point) => point.geometry.coordinates);
-                    geojson.features.push(linestring);
-                    const value = document.createElement('pre');
-                    const distance = turf.length(linestring);
-                    value.textContent = `Total distance: ${distance.toLocaleString()}km`;
-                    distanceContainer.appendChild(value);
-                }
-
-                enableSim();
-                map.getSource('geojson').setData(geojson);
-            }
-            );
-        }
-        );
-
-        map.on('mousemove', (e) => {
-            const features = map.queryRenderedFeatures(e.point, {
-                layers: ['measure-points']
-            }
-            );
-            map.getCanvas().style.cursor = features.length ? 'pointer'
-                : 'crosshair';
-        }
-        );
-
-        function simulateDrone() {
-            if (document.getElementById("geojson").value !== "" ) {
-                var geo = document.getElementById("geojson").value;
-                const obj = JSON.parse(geo);
-                map.getSource('geojson').setData(obj);
-                sendDroneCoords(obj.features[0].geometry.coordinates);
-            }else {
-                sendDroneCoords(linestring.geometry.coordinates);
-            }
-
-        }
-
-        function makeFlightplan() {
-            if (document.getElementById("geojson").value !== "" ) {
-                var geo = document.getElementById("geojson").value;
-                const obj = JSON.parse(geo);
-                map.getSource('geojson').setData(obj);
-                sendFlightplan(obj.features[0].geometry.coordinates);
-            }else {
-                sendFlightplan(linestring.geometry.coordinates);
-            }
-        }
-
-        function clearMap() {
-            distanceContainer.innerHTML = '';
-            geojson.features.length = 0;
-            geojsonzone.features.length = 0;
-            path_pos.features.length = 0;
-            path_plan.features.length = 0;
-            landed = 0;
-            map.getSource('geojson').setData(geojson);
-            document.getElementById('start').disabled = true;
-            document.getElementById('flightplan').disabled = true;
-            document.getElementById('ack').disabled = true;
-            document.getElementById('close').disabled = true;
-            document.getElementById('takeoff').disabled = true;
-            document.getElementById('rogueup').disabled = true;
-            document.getElementById('land').disabled = true;
-            document.getElementById('rogueright').disabled = true;
-            document.getElementById('time').value = "0";
-        }
-
-        function showInfo() {
-            document.getElementById("info").hidden = !document.getElementById("info").hidden;
-            
-        }
-
-        function rogueUp() {
-            rogueActiveUp = !rogueActiveUp;
-        }
-
-        function rogueRight() {
-            rogueActiveRight = !rogueActiveRight;
-        }
-
-        function land() {
-            landed = 1;
-        }
-
-        async function sendDroneCoords(dronecoords) {
-            var ident = document.getElementById("identifier").value;
-            altitude = document.getElementById("altitude").value;
-            var speed = document.getElementById("speed").value * 0.277;
-
-            pathnumber = 0;
-
-            //object to send
-            bo = new Object();
-            bo.access_token = access_token; //access_token.... to be removed server side
-            bo.origin = "FRQ Simulator";
-
-            bo.acquisition_datetime_accuracy = 205;
-            bo.report_id = UUIDGeneratorBrowser();
-            if (opID == "") {
-                opID = UUIDGeneratorBrowser();
-            }
-            bo.operation_id = opID,
-            bo.identifications = [{
-                    "confidence": 1,
-                    "type": "ID_CALLSIGN",
-                    "value": "" + ident + ""
-                },
-                {
-                    "confidence": 1,
-                    "type": "ID_ICAO",
-                    "value": "" + icao + ""
-                }];
-            bo.classification_info = {
-                "classifications": [{
-                    "agility": "AGILITY_MEDIUM",
-                    "id": "12385f64-5717-4562-b3fc-2c963f66afa6",
-                    "probability": 99,
-                    "subtypes": [
-                        "UNMANNED"
-                    ],
-                    "type": "AIRCRAFT"
-                }]
-            };
-
-            //splitting up the line drawn onto the map into smaller steps to get a position every second.
-            //depending on speed.
-            var line = turf.lineString(dronecoords);
-            var options = {
-                units: 'kilometers'
-            };
-
-            var extend = 0.00;
-            var dist = speed / 1000;
-            var totallength = turf.length(line);
-            path_pos.features.length = 0;
-            path_pos.features.push(line.geometry.coordinates[0]);
-
-            while (extend < totallength) {
-                extend = extend + dist;
-                path_pos.features.push(turf.along(line, extend, options).geometry.coordinates);
-            }
-
-            for (var i = 0; i < path_pos.features.length; i++) {
-                setTimeout(function () { sendPosition(bo, i) }, i * 1000);
-            }
-        }
-
-        async function sendPosition(bo, i) {
-            var localaltitude = altitude;
-            if (pathnumber < 9) {
-                localaltitude = (altitude / 10) * pathnumber;
-            }
-            if (pathnumber > path_pos.features.length - 9) {
-                localaltitude = altitude - (altitude / 10) * (11 - (path_pos.features.length - pathnumber));
-            }
-
-            if (landed == 1) {
-                localaltitude = 0;
-                landed = 2;
-            }
-
-            bo.altitudes = [{
-                "altitude": localaltitude,
-                "altitude_accuracy": 0.99,
-                "altitude_crs": "WGS84",
-                "altitude_data_age": 1,
-                "altitude_type": "ABOVE_ELLIPSOID",
-                "determination_method": "GNSS_BASED"
-            }];
-
-            var coord = path_pos.features[pathnumber];
-
-            if (rogueActiveUp || roguevalueUp != 0) {
-                if (rogueActiveUp) {
-                    coord[1] = coord[1] + roguevalueUp / 7000;
-                    roguevalueUp++;
-                } else {
-                    var minvalue = roguevalueUp--;
-                    coord[1] = coord[1] + minvalue / 7000;
-                }
-            }
-
-            if (rogueActiveRight || roguevalueRight != 0) {
-                if (rogueActiveRight) {
-                    coord[0] = coord[0] + roguevalueRight / 7000;
-                    roguevalueRight++;
-                } else {
-                    var minvalue = roguevalueRight--;
-                    coord[0] = coord[0] + minvalue / 7000;
-                }
-            }
-
-            dronemarker.setLngLat(coord);
-
-            bo.position = {
-                "latitude": coord[1],
-                "longitude": coord[0],
-                "position_accuracy": 0.99,
-                "position_crs": "WGS84",
-                "position_data_age": 1
-            };
-            bo.acquisition_datetime = new Date();
-
-            pathnumber++;
-            if(landed == 2){
-                
-                path_pos.features.length = 0;
-            }
-
-
-            await sleep(1).then(() => {
-                (async () => {
-                    const rawResponse = await fetch('/simulate', {
-                        method: 'POST',
-                        headers: {
-                            'Accept': 'application/json',
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify(bo)
-                    }
-                    );
-                    //const content = await rawResponse.json();
-                    
-                }
-                )();
-            }
-            );
-
-            //updating drone position on map
-            dronemarker.addTo(map);
-            if (debug) {
-                console.log(new Date() + JSON.stringify(bo));
-            }
-        }
-
-        async function sendFlightplan(dronecoords) {
-            opID = UUIDGeneratorBrowser();
-            var ident = document.getElementById("identifier").value;
-            var dronereg = document.getElementById("dronereg").value;
-            var icao = document.getElementById("icao").value;
-            var optitle = document.getElementById("optitle").value;
-            var altitude = document.getElementById("altitude").value;
-            var speed = document.getElementById("speed").value;
-
-            op = new Object();
-            const trajectoryElements = [];
-            op.access_token = access_token;
-            op.operationPlanId = opID;
-            op.version = UUIDGeneratorBrowser();
-            op.previousVersions = [];
-            op.ussName = "utmsim";
-            op.aircraftComment = "FRQ Sim";
-            op.state = "PROPOSED";
-            op.stateAttributeType = "NONE";
-            op.stateTransitionMode = null;
-            op.operator = "FRQ";
-            op.submitTime = new Date();
-            op.updateTime = new Date();
-            op.typeOfOperation = "REMOTELY_PILOTED_BVLOS";
-            op.swarmSize = 1;
-            op.formationId = null;
-            op.formationOpIds = [];
-            op.minContOpTime = 0;
-            op.operationVolumes = [];
-            op.operationTrajectory = {
-                "positionCRS": "WGS84",
-                "altitudeCRS": "WGS84",
-                "positionUncertainty": 0.00040,
-                "altitudeUncertainty": 10,
-                "timingUncertainty": 30,
-                "altitudeType": "ABOVE_ELLIPSOID",
-                trajectoryElements
-            };
-            op.contingencyPlans = [];
-            op.takeoffLocation = null;
-            op.landingLocation = null;
-            op.uasRegistrations = [{
-                "droneId": ident,
-                "registrationId": dronereg,
-                "registrationLocation": "Central Registration Office Wien-Meidling"
-            }];
-            op.flightDetails = [{
-                "flightNumber": "null",
-                "flightType": "null",
-                "flightComment": "UTM SIM Flight",
-                "maxFlightSpeedKnots": 500.0
-            }];
-            op.priority = {
-                "priorityText": "prio text",
-                "priorityLevelSimple": "PRIO_MEDIUM",
-                "priorityLevelCorus": null
-            };
-            op.contactDetails = {
-                "firstName": ident,
-                "lastName": "Simulator",
-                "emails": ["simulator@frequentis.com"],
-                "phone": ["+43123456", "+43654321"],
-                "comment": "Person or organization comments",
-                "fax": null
-            };
-            op.publicInfo = {
-                "title": optitle,
-                "description": "FRQ Simulator 3020"
-            };
-            op.mission = null;
-
-            var options = {
-                units: 'kilometers'
-            };
-
-            path_plan.features.length = 0;
-
-            var line = turf.lineString(dronecoords);
-
-            var adddist = ((speed * 0.277778)) * elementTimer / 1000;
-
-            path_plan.features.push(line.geometry.coordinates[0]);
-
-
-            for (var i = 0; i < line.geometry.coordinates.length - 1; i++) {
-                var tomeasure = turf.lineString([[line.geometry.coordinates[i][0], line.geometry.coordinates[i][1]], [line.geometry.coordinates[i + 1][0], line.geometry.coordinates[i + 1][1]]]);
-
-                var length = turf.length(tomeasure, options);
-                var extend = 0.00;
-                while (extend < length) {
-                    extend = extend + adddist;
-                    path_plan.features.push(turf.along(tomeasure, extend, options).geometry.coordinates);
-                }
-            }
-            path_plan.features.push(line.geometry.coordinates[line.geometry.coordinates.length - 1]);
-
-            var totaltime = 0;
-            for (var i = 0; i < path_plan.features.length - 1; i++) {
-
-                var todistancefortime = turf.lineString([[path_plan.features[i][0], path_plan.features[i][1]], [path_plan.features[i + 1][0], path_plan.features[i + 1][1]]]);
-                var lengthfortime = turf.length(todistancefortime, options);
-                var timetoadd = (lengthfortime * 1000) / (speed * 0.277778)
-                var localaltitude = altitude;
-                if (i == 0 || i == path_plan.features.length - 1) {
-                    localaltitude = 0;
-                }
-                var points = path_plan.features[i];
-                var point = new Object();
-
-
-                var test = new Date(document.getElementById("starttime").value);
-
-
-                var time = new Date(test.getTime() + 1000 * totaltime);
-
-
-                totaltime = totaltime + timetoadd;
-
-                point = {
-                    "altitude": localaltitude,
-                    "time": time,
-                    "latitude": points[1],
-                    "longitude": points[0]
-                };
-
-                trajectoryElements.push(point);
-            }
-
-            var point = turf.point(path_plan.features[0]);
-
-            op.controllerLocation = {
-                "type": "Point",
-                "coordinates": [point.geometry.coordinates[0], point.geometry.coordinates[1]]
-            };
-            op.gcsLocation = {
-                "type": "Point",
-                "coordinates": [point.geometry.coordinates[0], point.geometry.coordinates[1]]
-            };
-
-
-
-            //compute volume from trajectory
-            const rawResponse = await fetch('/computeVolumeFromTrajectory', {
-                    method: 'POST',
-                    headers: {
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(op)
-                }
-            );
-
-            op = JSON.parse(await rawResponse.json());
-            op.access_token = access_token;
-
-            console.log(op);
-            opsaved = op;
-            if (debug) {
-                console.log(JSON.stringify(op));
-            }
-
-            //sending 
-            await sleep(10).then(() => {
-                (async () => {
-                    const rawResponse = await fetch('/flightplan', {
-                        method: 'POST',
-                        headers: {
-                            'Accept': 'application/json',
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify(op)
-                    }
-                    );
-                    const content = await rawResponse.json();
-                    document.getElementById('takeoff').disabled = false;
-                    document.getElementById('close').disabled = false;
-                    document.getElementById('ack').disabled = false;
-                }
-                )();
-            }
-            );
-        }
-
-        function authServer() {
-            credentials = new Object();
-            credentials.client = document.getElementById("client").value;
-            credentials.secret = (document.getElementById("secret").value);
-
-            (async () => {
-                const rawResponse = await fetch('/authutm', {
-                    method: 'POST',
-                    body: JSON.stringify(credentials),
-                    headers: {
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json'
-                    }
-                }
-                );
-                token = await rawResponse.json();
-                if (debug) {
-                    console.log(token);
-                }
-                setToken(token.access_token);
-            }
-            )();
-        }
-
-        async function takeoff() {
-            opsaved.state = "TAKEOFFREQUESTED";
-            op.version = UUIDGeneratorBrowser();
-            op.updateTime = new Date();
-
-            //sending 
-            await sleep(10).then(() => {
-                (async () => {
-                    const rawResponse = await fetch('/takeoff', {
-                        method: 'POST',
-                        headers: {
-                            'Accept': 'application/json',
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify(opsaved)
-                    }
-                    );
-                    const content = await rawResponse.json();
-                    console.log (content);
-                }
-                )();
-            }
-            );
-        }
-
-        async function closeOP() {
-            path_pos.features.length = 0;
-            path_plan.features.length = 0;
-            landed = 0;
-            opsaved.state = "CLOSED";
-
-            //sending 
-            await sleep(10).then(() => {
-                (async () => {
-                    const rawResponse = await fetch('/declareEndOfFlight', {
-                        method: 'POST',
-                        headers: {
-                            'Accept': 'application/json',
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify(opsaved)
-                    }
-                    );
-                    const content = await rawResponse.json();
-                }
-                )();
-            }
-            );
-        }
-
-        async function ackAlert() {
-            ack = new Object();
-            ack.access_token = access_token;
-            ack.opID = opID;
-
-            //sending 
-            await sleep(10).then(() => {
-                (async () => {
-                    const rawResponse = await fetch('/ackAlert', {
-                        method: 'POST',
-                        headers: {
-                            'Accept': 'application/json',
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify(ack)
-                    }
-                    );
-                    const content = await rawResponse.json();
-                }
-                )();
-            }
-            );
-        }
-
-        function loadJSON() {
-            if (document.getElementById("geojson").value !== "" ) {
-                var geo = document.getElementById("geojson").value;
-                const obj = JSON.parse(geo);
-                map.getSource('geojson').setData(obj);
-            }
-
-            
-        }
-
-        function loadJSONZone() {
-            if (document.getElementById("geojson").value !== "" ) {
-                var geo = document.getElementById("geojson").value;
-                const obj = JSON.parse(geo);
-                map.getSource('geojsonzone').setData(obj);
-            }
-
-            
-        }
-
-
-        function enableSim() {
-            if (document.getElementById("identifier").value === "" || document.getElementById("altitude").value === "" || document.getElementById("speed").value === "" || geojson.features.length < 2 || document.getElementById("bearer").value === "") {
-                document.getElementById('start').disabled = true;
-                document.getElementById('flightplan').disabled = true;
-            }
-
-            else {
-                document.getElementById('start').disabled = false;
-                document.getElementById('rogueup').disabled = false;
-                document.getElementById('land').disabled = false;
-                document.getElementById('rogueright').disabled = false;
-                document.getElementById('flightplan').disabled = false;
-            }
-
-            var speed = document.getElementById("speed").value;
-
-            var dist = turf.length(linestring);
-            var time = dist / speed * 60;
-
-            document.getElementById("time").value = time;
-
-            saveCredentials();
-        }
-
-        function saveCredentials() {
-            localStorage.utmclient = document.getElementById("client").value;
-            localStorage.utmsecret = document.getElementById("secret").value;
-            localStorage.utmidentifier = document.getElementById("identifier").value;
-            localStorage.utmaltitude = document.getElementById("altitude").value;
-            localStorage.utmspeed = document.getElementById("speed").value;
-            localStorage.utmdronereg = document.getElementById("dronereg").value;
-            localStorage.utmoptitle = document.getElementById("optitle").value;
-            localStorage.utmicao = document.getElementById("icao").value;
-        }
-
-        function setToken(token) {
-            access_token = token;
-            document.getElementById("bearer").value = token;
-
-        }
-
-        function setTokenManually() {
-            access_token = document.getElementById("bearer").value;
-        }
-
-        const UUIDGeneratorBrowser = () =>
-            ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, c =>
-                (
-                    c ^
-                    (crypto.getRandomValues(new Uint8Array(1))[0] & (15 >> (c / 4)))
-                ).toString(16)
-            );
-
-        function sleep(ms) {
-            return new Promise(resolve => setTimeout(resolve, ms));
-        }
-
-    </script>
+	<div class="wrapper">
+		<div class="box a">
+			<div id="title" name="title" class="title">UTM
+				Simulator NG+
+			</div>
+			<label id="labelbearer" for="bearer" class="block_label">Bearer Token</label>
+			<input type="text" name="bearer" id="bearer" class="block" onkeyup="setTokenManually()"
+				placeholder="Bearer Token" required="required">
+		</div>
+
+		<div class="box a1">
+			<label id="labelclient" for="client" class="block_label">Client ID</label>
+			<input type="text" name="client" id="client" class="block" onkeyup="saveCredentials()"
+				placeholder="Client ID" required="required">
+			<label id="labelsecret" for="secret" class="block_label">Client Secret</label>
+			<input type="text" name="secret" class="block" id="secret" onkeyup="saveCredentials()"
+				placeholder="Client Secret" required="required">
+			<button id="authenticate" class="block head_gruen" onclick="authServer();ButtonBusy(this);">Authenticate
+			</button>
+
+		</div>
+
+		<div class="b" style="position: relative;">
+			<div id="utm_feedback" class="fom_feedback_banner" style="display: none;">
+				<div class="fom_feedback_label">Messages</div>
+				<div id="utm_feedback_content" style="text-align: left; margin-top: 30px; font-size: 16px;">
+				</div>
+			</div>
+
+			<div id="map"></div>
+			<div id="distance" class="distance-container"></div>
+		</div>
+		<div class="box c">
+			<label id="labelidentifier" for="identifier" class="block_label">Drone Identifier</label>
+			<input type="text" name="identifier" id="identifier" class="block" onkeyup="enableSim()"
+				placeholder="Drone Identifier" required="required">
+
+			<label id="labeldronereg" for="dronereg" class="block_label">Drone Registration ID</label>
+			<input type="text" name="dronereg" id="dronereg" class="block" placeholder="Drone Registration UUID">
+			<label id="labelicao" for="icao" class="block_label">ICAO ID</label>
+			<input type="text" name="icao" id="icao" class="block" placeholder="AE064E">
+			<label id="labelaltitude" for="altitude" class="block_label">Altitude WGS84 (m)</label>
+			<input type="text" name="altitude" id="altitude" class="block" onkeyup="enableSim()"
+				placeholder="Altitude WGS84 (m)" required="required">
+			<label id="labelspeed" for="speed" class="block_label">Speed (km/h)</label>
+			<input type="text" name="speed" id="speed" class="block" onkeyup="enableSim()" placeholder="Speed (km/h)"
+				required="required">
+
+			<label id="simulate_type" class="block_label">Simulation Type</label>
+			<div class="block">
+				<input type="radio" class="options_green" name="simulate_type" id="simulate_drone" value="0"
+					checked="checked">
+				<label class="head_grau" style="width: 45%; display: inline-block;" for="simulate_drone">Drone</label>
+
+				<input type="radio" class="options_green" name="simulate_type" id="simulate_aircraft" value="1">
+				<label class="head_grau" style="width: 45%; display: inline-block;"
+					for="simulate_aircraft">Aircraft</label>
+			</div>
+
+			<button id="start" onclick="simulateDrone();ButtonBusy(this);" class="block head_gruen" disabled>Simulate
+				Flight
+			</button>
+			<button id="rogueup" onclick="rogueUp();ButtonToggleSelected(this);" class="block head_gelb" disabled>Rogue
+				North
+			</button>
+			<button id="rogueright" onclick="rogueRight();ButtonToggleSelected(this);" class="block head_gelb"
+				disabled>Rogue East
+			</button>
+			<button id="planedescend" onclick="planeDescend();ButtonToggleSelected(this);" class="block head_gelb"
+				disabled>Aircraft Descend
+			</button>
+			<button id="land" onclick="land();ButtonBusy(this);" disabled class="block head_gruen">Land</button>
+
+
+
+		</div>
+		<div class="box d">
+			<label id="labeltime" for="time" class="block_label">Estimated Flighttime (min)</label>
+			<input type="text" name="time" id="time" class="block" placeholder="Estimated Flighttime (min)" readonly>
+			<label id="starttimelabel" for="starttime" class="block_label">Operation Plan Start Time UTC</label>
+			<input type="text" name="starttime" id="starttime" class="block" placeholder="2022-04-04T23:28:56.782Z">
+			<label id="optitlelabel" for="optitle" class="block_label">Operation Plan Title</label>
+			<input type="text" name="optitle" id="optitle" class="block" placeholder="OP Title">
+			<button id="flightplan" onclick="makeFlightplan();ButtonBusy(this);" disabled
+				class="block head_gruen">Request Operation Plan
+			</button>
+			<button id="takeoff" onclick="ButtonBusy(this);takeoff();" disabled class="block head_gruen">Request
+				Takeoff
+			</button>
+
+			<select id="report_emer_type" class="block select_big" style="display: none;">
+				<option>General Emergency</option>
+				<option>Loss of Control</option>
+				<option>Loss of Power</option>
+				<option>Mid-Air Collision</option>
+				<option>Obstacle Collision</option>
+				<option>Personal Injury</option>
+			</select>
+
+			<button id="report_emer"
+				onclick="if(confirm('Confirm reporting EMERGENCY?')) { if(opID.length<1) { ShowAlert('<div id=\'utm_alert_4713\' class=\'fom_message_error_invers fom_message_emphasize fom_message_emphasize_error_invers\'>EMERGENCY 7700</div>'); } else { sendMessage('OTHER_SEE_FREE_TEXT', 'EMERGENCY', document.getElementById('report_emer_type').value); document.getElementById('report_emer_type').disabled=true; } emergencyStatus=7700; ButtonBusy(this); }"
+				class="block head_rot" disabled>Report Emergency
+			</button>
+
+			<button id="close"
+				onclick="if(confirm('Confirm closing OP / Flight ended?')) { closeOP();ButtonBusy(this); }" disabled
+				class="block head_rot">Close OP + Stop
+				Flight
+			</button>
+			<button id="clear" onclick="if(confirm('Confirm STOP Sim session?')) { clearMap();ButtonBusy(this); }"
+				class="block head_rot">Stop & Clear
+				Simulation
+			</button>
+
+			<input type="text" name="geojson" id="geojson" class="block" placeholder="Paste GeoJSON Path"
+				oninput="loadJSON()">
+
+			<div class="block_label">Map Style:</div>
+			<a href="javascript:void(0)"
+				onclick="localStorage.utmmapstyle='mapbox:\/\/styles\/mapbox\/light-v11';location.reload()"
+				style="color:aquamarine; font-size: 16px;">Light</a>
+			<a href="javascript:void(0)"
+				onclick="localStorage.utmmapstyle='mapbox:\/\/styles\/mapbox\/dark-v11';location.reload()"
+				style="color:aquamarine; font-size: 16px;">Dark</a>
+			<a href="javascript:void(0)"
+				onclick="localStorage.utmmapstyle='mapbox:\/\/styles\/mapbox\/streets-v11';location.reload()"
+				style="color:aquamarine; font-size: 16px;">Street</a>
+
+			<div class="modallink" id="modallink" name="modallink">
+				<a href="#demo-modal">Info</a>
+			</div>
+		</div>
+	</div>
+
+	<div class="modal" id="demo-modal" hidden>
+		<div class="modal__content">
+			<b>UTM Drone Simulator NG+</b>
+			</br></br>
+			(*) Connected to NBD-UTM instance. https://smartsis-airlabs.utm-labs-frequentis.com/
+			</br></br>
+			(*) Alert Polling starts with OP Request
+			</br></br>
+			(*) No subscriptions needed.
+			</br></br>
+			(*) Note: Altitude is the "middle value". Uncertainity of 10m is added via the according computeOP call.
+			</br></br>
+			(*) Note: Click the "rogue" button again to send the drone back to the nominal flight path.
+			</br></br>
+			(*) Note: URL parameter "?debug" enables a bit more client console logging.
+			</br></br>
+			(*) Note: Aircraft below 150m triggers geozone.
+			</br></br>
+			(*) Based on: https://github.com/moe01324/utmsim
+			</br></br>
+			(*) SGG/GMG version 24.04.2023
+			</br></br>
+
+			<a href="#" class="modal__close" onclick="/*TestAlert()*/">&times;</a>
+
+		</div>
+		<script>
+			var token = "";
+			var access_token = "";
+			var opID = "";
+			var opsaved;
+			var landed = 0;
+			var pathnumber = 0;
+			var altitude = 1;
+			var messages = [];
+			var met_items = [];
+
+			const queryString = window.location.search;
+			const urlParams = new URLSearchParams(queryString);
+			const debug = urlParams.has('debug');
+
+			// a new OP element every x seconds
+			var elementTimer = 300;
+			const vertical_reference = "HAE";
+
+			var rogueActiveUp = false;
+			var roguevalueUp = 0;
+			var rogueActiveRight = false;
+			var planeDescendActive = false;
+			var roguevalueRight = 0;
+			var planeDescendValue = 0;
+			var emergencyStatus = 0;
+			var simulate_aircraft = false;
+
+			var alert_count_shown = 0;
+
+			document.getElementById("client").value = localStorage.getItem('utmclient');
+			document.getElementById("secret").value = localStorage.getItem('utmsecret');
+			document.getElementById("speed").value = localStorage.getItem('utmspeed');
+			document.getElementById("altitude").value = localStorage.getItem('utmaltitude');
+			document.getElementById("identifier").value = localStorage.getItem('utmidentifier');
+			document.getElementById("dronereg").value = localStorage.getItem('utmdronereg');
+			document.getElementById("icao").value = localStorage.getItem('utmicao');
+			document.getElementById("optitle").value = localStorage.getItem('utmoptitle');
+
+			var map_basestyle = localStorage.getItem('utmmapstyle');
+			if (!map_basestyle) {
+				map_basestyle = 'mapbox:\/\/styles\/mapbox\/streets-v11';
+			}
+
+			var newDateObj = new Date();
+			newDateObj.setTime(newDateObj.getTime() + (2 * 60 * 1000));
+			document.getElementById("starttime").value = newDateObj.toJSON();
+
+			const distanceContainer = document.getElementById('distance');
+
+			// access token from https://www.mapbox.com/ - free
+			mapboxgl.accessToken = 'pk.eyJ1IjoibW9lMDEzMjUiLCJhIjoiY2wwbzlxcTVpMGV1MzNvbnRmMmNlOWdzayJ9.YbJY5mSL7Xrymf8k24Sfcg';
+
+			var utmcenterlat = 48.19908;
+			var utmcenterlng = 16.4138;
+
+			if (localStorage.getItem('utmcenterlat')) {
+				utmcenterlat = localStorage.getItem('utmcenterlat');
+				utmcenterlng = localStorage.getItem('utmcenterlng');
+			}
+
+			const map = new mapboxgl.Map({
+				container: 'map',
+				style: map_basestyle, //'mapbox://styles/mapbox/streets-v11',
+				center: [utmcenterlng, utmcenterlat],
+				zoom: 12,
+				pitch: 0,
+				maxPitch: 45,
+				//bearing: -17.6,
+				container: 'map',
+				//antialias: true,
+				dragRotate: false
+			}
+			);
+
+			map.addControl(new mapboxgl.NavigationControl());
+
+			map.addControl(new mapboxgl.GeolocateControl({ fitBoundsOptions: { maxZoom: 12 } }));
+
+			map.addControl(new mapboxgl.ScaleControl({ position: 'bottom-right', maxWidth: 100 }));
+
+			// GeoJSON object to hold our measurement features
+			const geojson = {
+				'type': 'FeatureCollection',
+				'features': []
+			};
+
+			const geojsonzone = {
+				'type': 'FeatureCollection',
+				'features': []
+			};
+
+			const geojsonplans = {
+				'type': 'FeatureCollection',
+				'features': []
+			};
+
+			const path_pos = {
+				'type': 'FeatureCollection',
+				'features': []
+			};
+
+			const path_plan = {
+				'type': 'FeatureCollection',
+				'features': []
+			};
+
+			// Used to draw a line between points
+			const linestring = {
+				'type': 'Feature',
+				'geometry': {
+					'type': 'LineString',
+					'coordinates': []
+				}
+			};
+
+			///drone icon
+			const el = document.createElement('div');
+			el.className = 'marker';
+			el.style.backgroundImage = `url(drone3.png)`;
+			el.style.width = `48px`;
+			el.style.height = `48px`;
+			el.style.backgroundSize = '100%';
+			const dronemarker = new mapboxgl.Marker(el);
+			var aircraftmarker = [];
+
+			map.on('style.load', () => {
+				// Insert the layer beneath any symbol layer.
+				const layers = map.getStyle().layers;
+				const labelLayerId = layers.find(
+					(layer) => layer.type === 'symbol' && layer.layout['text-field']
+				).id;
+
+				map.addLayer(
+					{
+						'id': 'add-3d-buildings',
+						'source': 'composite',
+						'source-layer': 'building',
+						'filter': ['==', 'extrude', 'true'],
+						'type': 'fill-extrusion',
+						'minzoom': 15,
+						'paint': {
+							'fill-extrusion-color': '#aaa',
+
+							'fill-extrusion-height': [
+								'interpolate',
+								['linear'],
+								['zoom'],
+								15,
+								0,
+								15.05,
+								['get', 'height']
+							],
+							'fill-extrusion-base': [
+								'interpolate',
+								['linear'],
+								['zoom'],
+								15,
+								0,
+								15.05,
+								['get', 'min_height']
+							],
+							'fill-extrusion-opacity': 0.6
+						}
+					},
+					labelLayerId
+				);
+			});
+
+			map.on('load', () => {
+
+				map.addSource('geojsonzone', {
+					'type': 'geojson',
+					/*
+					 * Each feature in this GeoJSON file contains values for
+					 * `properties.height`, `properties.base_height`,
+					 * and `properties.color`.
+					 * In `addLayer` you will use expressions to set the new
+					 * layer's paint properties based on these values.
+					 */
+					'data': geojsonzone
+				});
+
+				map.addLayer({
+					'id': 'room-extrusion', //['get', 'ident']
+					'type': 'fill-extrusion',
+					'source': 'geojsonzone',
+					'paint': {
+						// Get the `fill-extrusion-color` from the source `color` property.
+						'fill-extrusion-color': ['get', 'restriction_color'],
+
+						// Get `fill-extrusion-height` from the source `height` property.
+						'fill-extrusion-height': ['get', 'upper_limit'],
+
+						// Get `fill-extrusion-base` from the source `base_height` property.
+						'fill-extrusion-base': ['get', 'lower_limit'],
+
+						// Make extrusions slightly opaque to see through indoor walls.
+						'fill-extrusion-opacity': 0.5
+					}
+				});
+
+				map.addSource('geojson', {
+					'type': 'geojson',
+					'data': geojson
+				}
+				);
+
+				map.addLayer({
+					id: 'measure-points',
+					type: 'circle',
+					source: 'geojson',
+					paint: {
+						'circle-radius': 5,
+						'circle-color': '#061D7F'
+					},
+					filter: ['in', '$type', 'Point']
+				}
+				);
+
+				map.addLayer({
+					id: 'measure-lines',
+					type: 'line',
+					source: 'geojson',
+					layout: {
+						'line-cap': 'round',
+						'line-join': 'round'
+					},
+					paint: {
+						'line-color': '#061D7F',
+						'line-width': 2.5
+					},
+					filter: ['in', '$type', 'LineString']
+				}
+				);
+
+				map.on('click', (e) => {
+					if (!access_token)
+						return false;
+
+					//OP already requested or even flying
+					if (opID.length > 1)
+						return false;
+
+					const center = map.getCenter();
+					localStorage.utmcenterlat = center.lat;
+					localStorage.utmcenterlng = center.lng;
+					const features = map.queryRenderedFeatures(e.point, {
+						layers: ['measure-points']
+					});
+
+					// Remove the linestring from the group
+					// so we can redraw it based on the points collection.
+					if (geojson.features.length > 1) geojson.features.pop();
+
+					// Clear the distance container to populate it with a new value.
+					distanceContainer.innerHTML = '';
+
+					// If a feature was clicked, remove it from the map.
+					if (features.length) {
+						const id = features[0].properties.id;
+						geojson.features = geojson.features.filter((point) => point.properties.id !== id);
+					}
+					else {
+						const point = {
+							'type': 'Feature',
+							'geometry': {
+								'type': 'Point',
+								'coordinates': [e.lngLat.lng, e.lngLat.lat]
+							},
+							'properties': {
+								'id': String(new Date().getTime())
+							}
+						};
+						geojson.features.push(point);
+					}
+
+					if (geojson.features.length > 1) {
+						linestring.geometry.coordinates = geojson.features.map((point) => point.geometry.coordinates);
+						geojson.features.push(linestring);
+						const value = document.createElement('pre');
+						const distance = turf.length(linestring);
+						value.textContent = `Total distance: ${distance.toLocaleString()}km`;
+						distanceContainer.appendChild(value);
+					}
+
+					enableSim();
+					map.getSource('geojson').setData(geojson);
+				}
+				);
+			}
+			);
+
+			map.on('mousemove', (e) => {
+				if (!access_token)
+					return false;
+
+				const features = map.queryRenderedFeatures(e.point, {
+					layers: ['measure-points']
+				}
+				);
+				map.getCanvas().style.cursor = features.length ? 'pointer'
+					: 'crosshair';
+			}
+			);
+
+			const popup = new mapboxgl.Popup({
+				closeButton: false,
+				closeOnClick: false
+			});
+
+			map.on('mouseenter', 'room-extrusion', (e) => {
+				map.getCanvas().style.cursor = 'pointer';
+
+				const coordinates = e.features[0].geometry.coordinates[0].slice();
+				const description = e.features[0].properties.name + ' ' + e.features[0].properties.popupContent;
+
+				while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
+					coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
+				}
+				popup.setLngLat(coordinates[0]).setHTML(description).addTo(map);
+			});
+
+			map.on('mouseleave', 'room-extrusion', () => {
+				map.getCanvas().style.cursor = '';
+				popup.remove();
+			});
+
+			function simulateDrone() {
+				document.getElementById('report_emer').disabled = false;
+
+				if (document.getElementById("geojson").value !== "") {
+					var geo = document.getElementById("geojson").value;
+					const obj = JSON.parse(geo);
+					map.getSource('geojson').setData(obj);
+					sendDroneCoords(obj.features[0].geometry.coordinates[0]);
+				}
+				else {
+					sendDroneCoords(linestring.geometry.coordinates);
+				}
+			}
+
+			function makeFlightplan() {
+				if (document.getElementById("geojson").value !== "") {
+					var geo = document.getElementById("geojson").value;
+					const obj = JSON.parse(geo);
+					map.getSource('geojson').setData(obj);
+					sendFlightplan(obj.features[0].geometry.coordinates[0]);
+				}
+				else {
+					sendFlightplan(linestring.geometry.coordinates);
+				}
+			}
+
+			function clearMap() {
+				if ((!document.getElementById('close').disabled) && (opsaved.state) && (opsaved.state != "CLOSED")) {
+					closeOP();
+				}
+
+				distanceContainer.innerHTML = '';
+				geojson.features.length = 0;
+				geojsonzone.features.length = 0;
+				path_pos.features.length = 0;
+				path_plan.features.length = 0;
+				landed = 0;
+				opID = "";
+				messages = [];
+				met_items = [];
+
+				map.getSource('geojson').setData(geojson);
+				document.getElementById('start').disabled = true;
+				document.getElementById('flightplan').disabled = true;
+				document.getElementById('close').disabled = true;
+				document.getElementById('takeoff').disabled = true;
+				document.getElementById('report_emer').disabled = true;
+				document.getElementById('rogueup').disabled = true;
+				document.getElementById('planedescend').disabled = true;
+				document.getElementById('land').disabled = true;
+				document.getElementById('rogueright').disabled = true;
+				document.getElementById('time').value = "0";
+
+				document.getElementById('utm_feedback_content').innerHTML = '';
+				alert_count_shown = 0;
+
+				ShowAlert('<div id="utm_alert_4711" class="fom_message_info_invers fom_message_emphasize fom_message_emphasize_info_invers">Simulation Ended - Please reload page for new Sim <a href="javascript:void(0);" class="head_gruen_invers" onclick="ButtonBusy(this);setTimeout(\'location.reload()\', 1000);">Reload</a></div>');
+			}
+
+			function showInfo() {
+				document.getElementById("info").hidden = !document.getElementById("info").hidden;
+			}
+
+			function rogueUp() {
+				rogueActiveUp = !rogueActiveUp;
+			}
+
+			function rogueRight() {
+				rogueActiveRight = !rogueActiveRight;
+			}
+
+			function planeDescend() {
+				planeDescendActive = !planeDescendActive;
+			}
+
+			function land() {
+				landed = 1;
+			}
+
+			async function sendDroneCoords(dronecoords) {
+				var ident = document.getElementById("identifier").value;
+				altitude = document.getElementById("altitude").value;
+				var speed = document.getElementById("speed").value * 0.277;
+				icao = document.getElementById("icao").value;
+
+				simulate_aircraft = document.getElementById('simulate_aircraft').checked;
+
+				pathnumber = 0;
+
+				//object to send
+				bo = new Object();
+				bo.access_token = access_token; //access_token.... to be removed server side
+				bo.origin = "FRQ Simulator";
+
+				bo.acquisition_datetime_accuracy = 205;
+				bo.report_id = UUIDGeneratorBrowser();
+
+				if (!simulate_aircraft) {
+					if (opID == "") {
+						opID = UUIDGeneratorBrowser();
+
+						document.getElementById('report_emer_type').style.display = "inherit";
+					}
+
+					bo.operation_id = opID;
+				}
+
+				bo.identifications = [{
+					"confidence": 1,
+					"type": "ID_CALLSIGN",
+					"value": "" + ident + ""
+				},
+				{
+					"confidence": 1,
+					"type": "ID_ICAO",
+					"value": "" + icao + ""
+				}];
+
+				if (simulate_aircraft) {
+					bo.classification_info = {
+						"classifications": [{
+							"agility": "AGILITY_MEDIUM",
+							"id": "12385f64-5717-4562-b3fc-2c963f66afa6",
+							"probability": 99,
+							"subtypes": [
+								"AIRCRAFT"
+							],
+							"type": "AIRCRAFT"
+						}]
+					};
+				}
+				else {
+					bo.classification_info = {
+						"classifications": [{
+							"agility": "AGILITY_MEDIUM",
+							"id": "12385f64-5717-4562-b3fc-2c963f66afa6",
+							"probability": 99,
+							"subtypes": [
+								"UNMANNED"
+							],
+							"type": "AIRCRAFT"
+						}]
+					};
+				}
+
+				//splitting up the line drawn onto the map into smaller steps to get a position every second.
+				//depending on speed.
+				var line = turf.lineString(dronecoords);
+				var options = {
+					units: 'kilometers'
+				};
+
+				var extend = 0.00;
+				var dist = speed / 1000 * 3;
+				var totallength = turf.length(line);
+				path_pos.features.length = 0;
+				path_pos.features.push(line.geometry.coordinates[0]);
+
+				while (extend < totallength) {
+					extend = extend + dist;
+					path_pos.features.push(turf.along(line, extend, options).geometry.coordinates);
+				}
+
+				setTimeout(function () {
+					sendPosition(bo, 0)
+				}, 3000);
+			}
+
+			async function sendPosition(bo, i) {
+				var localaltitude = altitude;
+				//airplanes dont start and dont land
+				//but helicopters do...
+				if ((!simulate_aircraft) || (document.getElementById("identifier").value.indexOf('HEMS') == 0)) {
+					if (pathnumber < 4) {
+						localaltitude = (altitude / 5) * pathnumber;
+					}
+					if (pathnumber > path_pos.features.length - 4) {
+						localaltitude = altitude - (altitude / 5) * (6 - (path_pos.features.length - pathnumber));
+					}
+				}
+
+				if (planeDescendActive || planeDescendValue != 0) {
+					if (planeDescendActive) {
+
+						localaltitude = parseInt(localaltitude) - parseInt(planeDescendValue)
+						if (localaltitude > 20) {
+							planeDescendValue = planeDescendValue + 10;
+						}
+
+					}
+					else {
+						planeDescendValue = planeDescendValue - 10;
+						localaltitude = parseInt(localaltitude) - parseInt(planeDescendValue)
+					}
+				}
+
+				if (landed == 1) {
+					localaltitude = 0;
+					landed = 2;
+				}
+
+				bo.altitudes = [{
+					"altitude": localaltitude,
+					"altitude_accuracy": 0.99,
+					"altitude_crs": "WGS84",
+					"altitude_data_age": 1,
+					"altitude_type": "ABOVE_ELLIPSOID",
+					"determination_method": "GNSS_BASED"
+				}];
+
+				var coord = path_pos.features[pathnumber];
+
+				if (rogueActiveUp || roguevalueUp != 0) {
+					if (rogueActiveUp) {
+						coord[1] = coord[1] + roguevalueUp / 7000 * 3;
+						roguevalueUp++;
+					}
+					else {
+						var minvalue = roguevalueUp--;
+						coord[1] = coord[1] + minvalue / 7000 * 3;
+					}
+				}
+
+				if (rogueActiveRight || roguevalueRight != 0) {
+					if (rogueActiveRight) {
+						coord[0] = coord[0] + roguevalueRight / 7000 * 3;
+						roguevalueRight++;
+					}
+					else {
+						var minvalue = roguevalueRight--;
+						coord[0] = coord[0] + minvalue / 7000 * 3;
+					}
+				}
+
+				dronemarker.setLngLat(coord);
+
+				var track = 0;
+
+				if (pathnumber > 0) {
+					track = Math.round(turf.rhumbBearing(path_pos.features[pathnumber - 1], coord)); // * 10) / 10;
+
+					if (track < 0) {
+						track = 360 + track;
+					}
+
+					bo.velocity = {
+						"latitude": (coord[1] - path_pos.features[pathnumber - 1][1]) / 3,
+						"longitude": (coord[0] - path_pos.features[pathnumber - 1][0]) / 3,
+						"altitude": 0,
+						"horizontal_accuracy": 0,
+						"vertical_accuracy": 0,
+						"change_rate": {
+							"lat_change_rate": 0,
+							"lon_change_rate": 0,
+							"alt_change_rate": 0
+						}
+					};
+
+					//Send ATM Bubble every 15 seconds - shift 1 minute into flight direction while setting radius to 2 minute range
+					if ((localaltitude < 150) && (simulate_aircraft) && (pathnumber % 5 == 0)) {
+						sendReserveGeozone(coord[0] + (coord[0] - path_pos.features[pathnumber - 1][0]) * 20, coord[1] + (coord[1] - path_pos.features[pathnumber - 1][1]) * 20, speed / 30);
+					}
+				}
+				else if ((localaltitude < 150) && (simulate_aircraft) && (pathnumber % 5 == 0)) {
+					sendReserveGeozone(coord[0], coord[1]); //Send ATM Bubble every 15 seconds
+				}
+
+				bo.orientation = {
+					"pitch": 0,
+					"roll": 0,
+					"yaw": track,
+					"orientation_type": "Measured",
+					"orientation_crs": "WGS84",
+					"orientation_accuracy": 1
+				};
+
+				if (emergencyStatus == 7700) {
+					bo.priority = {
+						"priority": "DISTRESS",
+						"privilege": "EMERGENCY",
+						"priority_information": "General Emergency"
+					};
+				}
+
+				bo.position = {
+					"latitude": coord[1],
+					"longitude": coord[0],
+					"position_accuracy": 0.1,
+					"position_crs": "WGS84",
+					"position_data_age": 1
+				};
+				bo.acquisition_datetime = new Date();
+
+				pathnumber++;
+				if (landed == 2) {
+					path_pos.features.length = 0;
+				}
+
+				await sleep(1).then(() => {
+					(async () => {
+						const rawResponse = await fetch('/simulate', {
+							method: 'POST',
+							headers: {
+								'Accept': 'application/json',
+								'Content-Type': 'application/json'
+							},
+							body: JSON.stringify(bo)
+						}
+						);
+					}
+					)();
+				}
+				);
+
+				//updating drone position on map
+				dronemarker.addTo(map);
+				if (debug) {
+					console.log(new Date() + JSON.stringify(bo));
+				}
+
+				i++;
+
+				if (i < path_pos.features.length) {
+					setTimeout(function () {
+						sendPosition(bo, i)
+					}, 3000);
+				}
+			}
+
+			async function sendFlightplan(dronecoords) {
+				opID = UUIDGeneratorBrowser();
+				var ident = document.getElementById("identifier").value;
+				var dronereg = document.getElementById("dronereg").value;
+				var icao = document.getElementById("icao").value;
+				var optitle = document.getElementById("optitle").value;
+				var altitude = document.getElementById("altitude").value;
+				var speed = document.getElementById("speed").value;
+
+				op = new Object();
+				const trajectoryElements = [];
+				op.access_token = access_token;
+				op.operationPlanId = opID;
+				op.version = UUIDGeneratorBrowser();
+				op.previousVersions = [];
+				op.ussName = "utmsim";
+				op.aircraftComment = "FRQ Sim";
+				op.state = "PROPOSED";
+				op.stateAttributeType = "NONE";
+				op.stateTransitionMode = null;
+				op.operator = "FRQ";
+				op.submitTime = new Date();
+				op.updateTime = new Date();
+				op.typeOfOperation = "REMOTELY_PILOTED_BVLOS";
+				op.swarmSize = 1;
+				op.formationId = null;
+				op.formationOpIds = [];
+				op.minContOpTime = 0;
+				op.operationVolumes = [];
+				op.operationTrajectory = {
+					"positionCRS": "WGS84",
+					"altitudeCRS": "WGS84",
+					"positionUncertainty": 0.00040,
+					"altitudeUncertainty": 10,
+					"timingUncertainty": 30,
+					"altitudeType": "ABOVE_ELLIPSOID",
+					trajectoryElements
+				};
+				op.contingencyPlans = [];
+				op.takeoffLocation = null;
+				op.landingLocation = null;
+				op.uasRegistrations = [{
+					"droneId": ident,
+					"registrationId": dronereg,
+					"registrationLocation": "Central Registration Office Wien-Meidling"
+				}];
+				op.flightDetails = [{
+					"flightNumber": "null",
+					"flightType": "null",
+					"flightComment": "UTM SIM Flight",
+					"maxFlightSpeedKnots": 500.0
+				}];
+				op.priority = {
+					"priorityText": "prio text",
+					"priorityLevelSimple": "PRIO_MEDIUM",
+					"priorityLevelCorus": null
+				};
+				op.contactDetails = {
+					"firstName": ident,
+					"lastName": "Simulator",
+					"emails": ["simulator@frequentis.com"],
+					"phone": ["+43123456", "+43654321"],
+					"comment": "Person or organization comments",
+					"fax": null
+				};
+				op.publicInfo = {
+					"title": optitle,
+					"description": "FRQ Simulator 3020"
+				};
+				op.mission = null;
+
+				var options = {
+					units: 'kilometers'
+				};
+
+				path_plan.features.length = 0;
+
+				var line = turf.lineString(dronecoords);
+
+				var adddist = ((speed * 0.277778)) * elementTimer / 1000;
+
+				path_plan.features.push(line.geometry.coordinates[0]);
+
+
+				for (var i = 0; i < line.geometry.coordinates.length - 1; i++) {
+					var tomeasure = turf.lineString([[line.geometry.coordinates[i][0], line.geometry.coordinates[i][1]], [line.geometry.coordinates[i + 1][0], line.geometry.coordinates[i + 1][1]]]);
+
+					var length = turf.length(tomeasure, options);
+					var extend = 0.00;
+					while (extend < length) {
+						extend = extend + adddist;
+						path_plan.features.push(turf.along(tomeasure, extend, options).geometry.coordinates);
+					}
+				}
+				path_plan.features.push(line.geometry.coordinates[line.geometry.coordinates.length - 1]);
+
+				var totaltime = 0;
+				for (var i = 0; i < path_plan.features.length - 1; i++) {
+
+					var todistancefortime = turf.lineString([[path_plan.features[i][0], path_plan.features[i][1]], [path_plan.features[i + 1][0], path_plan.features[i + 1][1]]]);
+					var lengthfortime = turf.length(todistancefortime, options);
+					var timetoadd = (lengthfortime * 1000) / (speed * 0.277778)
+					var localaltitude = altitude;
+					if (i == 0 || i == path_plan.features.length - 1) {
+						localaltitude = 0;
+					}
+					var points = path_plan.features[i];
+					var point = new Object();
+					var test = new Date(document.getElementById("starttime").value);
+					var time = new Date(test.getTime() + 1000 * totaltime);
+
+					totaltime = totaltime + timetoadd;
+
+					point = {
+						"altitude": localaltitude,
+						"time": time,
+						"latitude": points[1],
+						"longitude": points[0]
+					};
+
+					trajectoryElements.push(point);
+				}
+
+				var point = turf.point(path_plan.features[0]);
+
+				op.controllerLocation = {
+					"type": "Point",
+					"coordinates": [point.geometry.coordinates[0], point.geometry.coordinates[1]]
+				};
+				op.gcsLocation = {
+					"type": "Point",
+					"coordinates": [point.geometry.coordinates[0], point.geometry.coordinates[1]]
+				};
+
+				try {
+					const rawResponse = await fetch('/computeVolumeFromTrajectory', {
+						method: 'POST',
+						headers: {
+							'Accept': 'application/json',
+							'Content-Type': 'application/json'
+						},
+						body: JSON.stringify(op)
+					}
+					);
+
+					op = JSON.parse(await rawResponse.json());
+					op.access_token = access_token;
+
+					console.log(op);
+					opsaved = op;
+					if (debug) {
+						console.log(JSON.stringify(op));
+					}
+
+					//sending
+					await sleep(10).then(() => {
+						(async () => {
+							const rawResponse = await fetch('/flightplan', {
+								method: 'POST',
+								headers: {
+									'Accept': 'application/json',
+									'Content-Type': 'application/json'
+								},
+								body: JSON.stringify(op)
+							}
+							);
+							const content = await rawResponse.text();
+							console.log(content);
+
+							document.getElementById('takeoff').disabled = false;
+							document.getElementById('close').disabled = false;
+							document.getElementById('report_emer').disabled = false;
+							document.getElementById('report_emer_type').style.display = "inherit";
+
+							opsaved.state = "OPREQUESTED";
+
+							ShowAlert('<div id="utm_alert_' + opID.substr(0, 4) + '" class="fom_message_info_invers fom_message_emphasize fom_message_emphasize_info_invers">Operation Plan requested - ID ' + opID + '</div>', 'utm_alert_' + opID.substr(0, 4));
+
+							checkAlerts();
+						}
+						)();
+					}
+					);
+				}
+				catch (e) {
+					alert(e);
+				}
+			}
+
+			function authServer() {
+				credentials = new Object();
+				credentials.client = document.getElementById("client").value;
+				credentials.secret = document.getElementById("secret").value;
+
+				(async () => {
+					const rawResponse = await fetch('/authutm', {
+						method: 'POST',
+						body: JSON.stringify(credentials),
+						headers: {
+							'Accept': 'application/json',
+							'Content-Type': 'application/json'
+						}
+					}
+					);
+					token = await rawResponse.json();
+					if (debug) {
+						console.log(token);
+					}
+					setToken(token.access_token);
+
+					const center = map.getCenter();
+					localStorage.utmcenterlat = center.lat;
+					localStorage.utmcenterlng = center.lng;
+
+					ShowAlert('<div id="utm_alert_' + token.access_token.substr(0, 4) + '" class="fom_message_ok_invers fom_message_emphasize fom_message_emphasize_ok_invers">Server Authentication Successful</div>', 'utm_alert_' + token.access_token.substr(0, 4));
+				}
+				)();
+			}
+
+			async function takeoff() {
+
+				if (Date.parse(document.getElementById('starttime').value) - Date.now() > 120 * 1000) {
+					var alert_time = Math.floor(Date.now() / 1000);
+					ShowAlert('<div id="utm_alert_' + alert_time + '" class="fom_message_caution_invers fom_message_emphasize fom_message_emphasize_caution_invers">Too early - Takeoff request possible 2min before start time</div>', 'utm_alert_' + alert_time);
+					ButtonUnbusy(document.getElementById('takeoff'));
+					return false;
+				}
+				else
+					if (Date.parse(document.getElementById('starttime').value) - Date.now() > 3000) {
+						var alert_time = Math.floor(Date.now() / 1000);
+						ShowAlert('<div id="utm_alert_' + alert_time + '" class="fom_message_info_invers fom_message_emphasize fom_message_emphasize_info_invers">Still early - Note your OP begins in ' + Math.round((Date.parse(document.getElementById('starttime').value) - Date.now()) / 1000) + 'sec</div>', 'utm_alert_' + alert_time);
+					}
+
+				opsaved.state = "TAKEOFFREQUESTED";
+				op.version = UUIDGeneratorBrowser();
+				op.updateTime = new Date();
+
+				//sending
+				await sleep(10).then(() => {
+					(async () => {
+						const rawResponse = await fetch('/takeoff', {
+							method: 'POST',
+							headers: {
+								'Accept': 'application/json',
+								'Content-Type': 'application/json'
+							},
+							body: JSON.stringify(opsaved)
+						}
+						);
+						const content = await rawResponse.text();
+						console.log(content);
+
+						if (content.indexOf('Activation request received') == - 1) {
+							var alert_time = Math.floor(Date.now() / 1000);
+							ShowAlert('<div id="utm_alert_' + alert_time + '" class="fom_message_caution_invers fom_message_emphasize fom_message_emphasize_caution_invers">' + content + '</div>', 'utm_alert_' + alert_time);
+
+							ButtonUnbusy(document.getElementById('takeoff'));
+						}
+					}
+					)();
+				}
+				);
+			}
+
+			async function closeOP() {
+				path_pos.features.length = 0;
+				path_plan.features.length = 0;
+				landed = 0;
+				opsaved.state = "CLOSED";
+
+				//sending
+				await sleep(10).then(() => {
+					(async () => {
+						const rawResponse = await fetch('/declareEndOfFlight', {
+							method: 'POST',
+							headers: {
+								'Accept': 'application/json',
+								'Content-Type': 'application/json'
+							},
+							body: JSON.stringify(opsaved)
+						}
+						);
+						const content = await rawResponse.json();
+
+						dronemarker.remove();
+					}
+					)();
+				}
+				);
+			}
+
+			async function ackAlert() {
+				ack = new Object();
+				ack.access_token = access_token;
+				ack.opID = opID;
+
+				//sending
+				await sleep(10).then(() => {
+					(async () => {
+						const rawResponse = await fetch('/ackAlert', {
+							method: 'POST',
+							headers: {
+								'Accept': 'application/json',
+								'Content-Type': 'application/json'
+							},
+							body: JSON.stringify(ack)
+						}
+						);
+						const content = await rawResponse.json();
+					}
+					)();
+				}
+				);
+			}
+
+			async function sendReserveGeozone(lat, long, radius) {
+				bo = new Object();
+
+				var now = new Date();
+				var fivemin = new Date(now.getTime() + 5 * 60000)
+				var threemin = new Date(now.getTime() + 3 * 60 * 1000)
+				var tenmin = new Date(now.getTime() + 10 * 60 * 1000);
+
+				bo.applicability = [
+					{
+						"startDateTime": now,
+						"endDateTime": threemin,
+						"permanent": "NO",
+						"schedule": []
+					}
+				];
+				bo.country = "AUT";
+				bo.extendedProperties = {};
+
+				var speed = document.getElementById("speed").value;
+
+				var center = [lat, long];
+				if (!radius) {
+					var radius = speed / 20;
+				}
+
+				var options = { steps: 32, units: 'kilometers' };
+				var circle = turf.circle(center, radius, options);
+
+				bo.geometry = [{
+					"horizontalProjection": circle.geometry,
+					"lowerLimit": 0,
+					"lowerVerticalReference": vertical_reference,
+					"uomDimensions": "FT",
+					"upperLimit": 500,
+					"upperVerticalReference": vertical_reference
+				}];
+
+				bo.extendedProperties = {
+					"expirationTime": tenmin,
+					"color": color = {
+						"fill": "#FFFFFFFF",
+						"stroke": "#000000FF"
+					}
+				};
+
+				var ident = document.getElementById("identifier").value;
+				bo.identifier = ident.substr(0, 7);
+				bo.type = "COMMON";
+				bo.message = "Traffic Alert - Low Level Manned Aircraft - Vacate Airspace!";
+				bo.metaData = {
+					"author": "FrequentisAG",
+					"creationDateTime": new Date(),
+					"updateDateTime": new Date()
+				};
+				bo.name = "Traffic Alert Airspace";
+
+				bo.reason = ["AIR_TRAFFIC"];
+
+				bo.restriction = "PROHIBITED";
+				bo.restrictionConditions = "";
+				bo.zoneAuthority = [
+					{
+						"contactName": "Frequentis",
+						"purpose": "INFORMATION"
+					}
+				];
+
+				console.log(JSON.stringify(bo));
+				bo.access_token = access_token;
+
+				//sending
+				await sleep(10).then(() => {
+					(async () => {
+						const rawResponse = await fetch('/sendOneGeoZone', {
+							method: 'POST',
+							headers: {
+								'Accept': 'application/json',
+								'Content-Type': 'application/json'
+							},
+							body: JSON.stringify(bo)
+						}
+						);
+						const content = await rawResponse.json();
+
+						if (content.indexOf('notification sent') == - 1) {
+							//var alert_time = Math.floor(Date.now() / 1000);
+							//ShowAlert('<div id="utm_alert_' + alert_time + '" class="fom_message_caution_invers fom_message_emphasize fom_message_emphasize_caution_invers">GeoZone not created:' + content + '</div>', 'utm_alert_' + alert_time);
+						}
+						else {
+							//ShowAlert('<div id="utm_alert_' + bo.name.substr(0, 4) + '" class="fom_message_info_invers fom_message_emphasize fom_message_emphasize_info_invers">' + ' GeoZone created</div>', 'utm_alert_' + name.substr(0, 4));
+						}
+					}
+					)();
+				}
+				);
+			}
+
+			function enableSim() {
+				if (document.getElementById("identifier").value === "" || document.getElementById("altitude").value === "" || document.getElementById("speed").value === "" || geojson.features.length < 2 || document.getElementById("bearer").value === "") {
+					document.getElementById('start').disabled = true;
+					document.getElementById('flightplan').disabled = true;
+				}
+
+				else {
+					document.getElementById('start').disabled = false;
+					document.getElementById('rogueup').disabled = false;
+					document.getElementById('land').disabled = false;
+					document.getElementById('rogueright').disabled = false;
+					document.getElementById('planedescend').disabled = false;
+					document.getElementById('flightplan').disabled = false;
+				}
+
+				var speed = document.getElementById("speed").value;
+
+				var dist = turf.length(linestring);
+				var time = dist / speed * 60;
+
+				document.getElementById("time").value = time;
+
+				saveCredentials();
+			}
+
+			function saveCredentials() {
+				localStorage.utmclient = document.getElementById("client").value;
+				localStorage.utmsecret = document.getElementById("secret").value;
+				localStorage.utmidentifier = document.getElementById("identifier").value;
+				localStorage.utmaltitude = document.getElementById("altitude").value;
+				localStorage.utmspeed = document.getElementById("speed").value;
+				localStorage.utmdronereg = document.getElementById("dronereg").value;
+				localStorage.utmoptitle = document.getElementById("optitle").value;
+				localStorage.utmicao = document.getElementById("icao").value;
+			}
+
+			function setToken(token) {
+				access_token = token;
+				document.getElementById("bearer").value = token;
+			}
+
+			function setTokenManually() {
+				access_token = document.getElementById("bearer").value;
+			}
+
+			const UUIDGeneratorBrowser = () =>
+				([1e7] + - 1e3 + - 4e3 + - 8e3 + - 1e11).replace(/[018]/g, c =>
+					(
+						c ^
+						(crypto.getRandomValues(new Uint8Array(1))[0] & (15 >> (c / 4)))
+					).toString(16)
+				);
+
+			function sleep(ms) {
+				return new Promise(resolve => setTimeout(resolve, ms));
+			}
+
+			function ButtonBusy(button_ref) {
+				button_ref.setAttribute('data-onclick', button_ref.getAttribute('onclick'));
+
+				button_ref.onclick = function (event) {
+					event.preventDefault();
+				};
+
+				button_ref.classList.add('button_busy');
+			}
+
+			function ButtonUnbusy(button_ref) {
+				if (button_ref.hasAttribute('data-onclick')) {
+					button_ref.setAttribute('onclick', button_ref.getAttribute('data-onclick'));
+				}
+				button_ref.classList.remove('button_busy');
+			}
+
+			function ButtonToggleSelected(button_ref) {
+				if (button_ref.classList.contains('button_selected')) {
+					button_ref.classList.remove('button_selected');
+				}
+				else {
+					button_ref.classList.add('button_selected');
+				}
+			}
+
+			function ShowAlert(data, autoclose_ref) {
+				document.getElementById('utm_feedback_content').innerHTML = document.getElementById('utm_feedback_content').innerHTML + data;
+
+				alert_count_shown++;
+
+				if (alert_count_shown == 1) {
+					document.getElementById('utm_feedback').style.display = 'block';
+				}
+
+				if (!autoclose_ref) {
+					//just return
+				}
+				else {
+					HideAlert(autoclose_ref, 5000);
+				}
+			}
+
+			function HideAlert(ref, close_timeout) {
+				if (!close_timeout) {
+					var close_timeout = 1000;
+				}
+				setTimeout(function () {
+					document.getElementById(ref).style.display = 'none';
+					alert_count_shown--;
+					if (!alert_count_shown) {
+						document.getElementById('utm_feedback_content').innerHTML = '';
+						document.getElementById('utm_feedback').style.display = 'none';
+					}
+				}, close_timeout);
+			}
+
+			function TestAlert() {
+				setTimeout(function () {
+					ShowAlert('<div id="utm_alert_4711" class="fom_message_info_invers fom_message_emphasize fom_message_emphasize_info_invers">Test Alert - Info <a href="javascript:void(0);" class="head_gruen_invers" onclick="ButtonBusy(this);HideAlert(\'utm_alert_4711\');">Acknowledge</a></div>');
+				}, 4000);
+				setTimeout(function () {
+					ShowAlert('<div id="utm_alert_4712" class="fom_message_caution_invers fom_message_emphasize fom_message_emphasize_caution_invers">Test Alert - Caution <a href="javascript:void(0);" class="head_gruen_invers" onclick="ButtonBusy(this);HideAlert(\'utm_alert_4712\');">Acknowledge</a></div>');
+				}, 8000);
+				setTimeout(function () {
+					ShowAlert('<div id="utm_alert_4713" class="fom_message_error_invers fom_message_emphasize fom_message_emphasize_error_invers">Test Alert - Critical <a href="javascript:void(0);" class="head_gruen_invers" onclick="ButtonBusy(this);HideAlert(\'utm_alert_4713\');">Acknowledge</a></div>');
+				}, 12000);
+			}
+
+			async function checkAlerts() {
+				if (opID != "") {
+					ofilter = new Object();
+					ofilter.access_token = access_token; //access_token.... to be removed server side
+
+					ofilter.listOfOperationPlanId = [opID];
+
+					await sleep(1).then(() => {
+						(async () => {
+							const rawResponse = await fetch('/getAlerts', {
+								method: 'POST',
+								headers: {
+									'Accept': 'application/json',
+									'Content-Type': 'application/json'
+								},
+								body: JSON.stringify(ofilter)
+							}
+							);
+							const content = await rawResponse.json();
+
+							if ((content.status) && (content.status == 401)) {
+								var alert_time = Math.floor(Date.now() / 1000);
+								ShowAlert('<div id="utm_alert_' + alert_time + '" class="fom_message_caution_invers fom_message_emphasize fom_message_emphasize_caution_invers">Token expired, alert delivery ended</div>', 'utm_alert_' + alert_time);
+							}
+
+							content.forEach(function (item) {
+								if (!messages.includes(item.message_id)) {
+									console.log(item.free_text + "(" + item.type + " " + item.severity_type + ")");
+
+									var severity_css_class = "info";
+									let critical_classes = "EMERGENCY, ALERT, CRITICAL";
+									let warning_classes = "WARNING";
+
+									if (critical_classes.indexOf(item.severity_type) != - 1) {
+										severity_css_class = "error";
+									}
+									else
+										if (warning_classes.indexOf(item.severity_type) != - 1) {
+											severity_css_class = "caution";
+										}
+
+									ShowAlert('<div id="utm_alert_' + item.message_id + '" class="fom_message_' + severity_css_class + '_invers fom_message_emphasize fom_message_emphasize_' + severity_css_class + '_invers">' + item.type + ': ' + item.free_text + ' <a href="javascript:void(0);" class="head_gruen_invers" onclick="ButtonBusy(this);ackMessage(\'' + item.message_id + '\');">Acknowledge</a></div>');
+
+									messages.push(item.message_id);
+								}
+							});
+
+							setTimeout(function () {
+								checkAlerts()
+							}, 5000);
+						})();
+					}
+					);
+				}
+			}
+
+			async function ackMessage(msg_id) {
+				ack_obj = new Object();
+				ack_obj.access_token = access_token; //access_token.... to be removed server side
+
+				ack_obj.message_id = msg_id;
+				ack_obj.status = "ACKNOWLEDGED";
+
+				await sleep(1).then(() => {
+					(async () => {
+						const rawResponse = await fetch('/ackOneAlert', {
+							method: 'POST',
+							headers: {
+								'Accept': 'application/json',
+								'Content-Type': 'application/json'
+							},
+							body: JSON.stringify(ack_obj)
+						}
+						);
+						const content = await rawResponse.json();
+						HideAlert('utm_alert_' + msg_id);
+						console.log(content);
+					})();
+				}
+				);
+			}
+
+			async function sendMessage(msg_type, msg_severity, msg_text) {
+				msg_obj = new Object();
+				msg_obj.access_token = access_token; //access_token.... to be removed server side
+
+				msg_obj.message_id = UUIDGeneratorBrowser();
+				msg_obj.free_text = msg_text;
+				msg_obj.type = msg_type;    //CONFIRM_DRONE_LANDED, OTHER_SEE_FREE_TEXT
+				msg_obj.severity_type = msg_severity;   // EMERGENCY, ALERT, CRITICAL, WARNING, NOTICE, INFORMATIONAL
+
+				msg_obj.uss_name = document.getElementById("client").value;
+				msg_obj.time_sent = new Date().toISOString();
+				msg_obj.operation_plans = [opID];
+
+				await sleep(1).then(() => {
+					(async () => {
+						const rawResponse = await fetch('/sendAlert', {
+							method: 'POST',
+							headers: {
+								'Accept': 'application/json',
+								'Content-Type': 'application/json'
+							},
+							body: JSON.stringify(msg_obj)
+						}
+						);
+						const content = await rawResponse.json();
+
+						var alert_time = Math.floor(Date.now() / 1000);
+						ShowAlert('<div id="utm_alert_' + alert_time + '" class="fom_message_ok_invers fom_message_emphasize fom_message_emphasize_ok_invers">Message Sent</div>', 'utm_alert_' + alert_time);
+
+						console.log(content);
+					})();
+				}
+				);
+			}
+
+			async function getMETARs(map_lng, map_lat) {
+				req_obj = new Object();
+				req_obj.lnglat = Math.round(map_lng * 10) / 10 + "," + Math.round(map_lat * 10) / 10;
+
+				await sleep(1).then(() => {
+					(async () => {
+						const rawResponse = await fetch('/getMet', {
+							method: 'POST',
+							headers: {
+								'Accept': 'application/json',
+								'Content-Type': 'application/json'
+							},
+							body: JSON.stringify(req_obj)
+						}
+						);
+						const content = await rawResponse.text();
+
+						let xml_content = new DOMParser().parseFromString(content, "text/xml");
+
+						let x = xml_content.getElementsByTagName("METAR");
+
+						for (i = 0; i < x.length; i++) {
+							let metar_lat = x[i].getElementsByTagName("latitude")[0].childNodes[0].nodeValue;
+							let metar_lng = x[i].getElementsByTagName("longitude")[0].childNodes[0].nodeValue;
+							let metar_label = x[i].getElementsByTagName("station_id")[0].childNodes[0].nodeValue;
+
+							let metar_text = '<h3>' + metar_label + '</h3>';
+
+							try {
+								metar_text = metar_text + 'Temp. ' + Math.round(x[i].getElementsByTagName("temp_c")[0].childNodes[0].nodeValue) + '&deg;C / Dewp. ' + Math.round(x[i].getElementsByTagName("dewpoint_c")[0].childNodes[0].nodeValue) + '&deg;C' +
+									'<br/>Wind ' + x[i].getElementsByTagName("wind_dir_degrees")[0].childNodes[0].nodeValue + '&deg; ' + Math.round(x[i].getElementsByTagName("wind_speed_kt")[0].childNodes[0].nodeValue / 1.94384) + 'm/s' +
+									'<br/>Visibility ' + Math.round(x[i].getElementsByTagName("visibility_statute_mi")[0].childNodes[0].nodeValue * 1609) + 'm' +
+									'<br/>QNH ' + Math.round(x[i].getElementsByTagName("altim_in_hg")[0].childNodes[0].nodeValue * 33.8639) + 'hPa';
+
+								let y = x[i].getElementsByTagName("sky_condition");
+								let c = 0;
+								for (j = 0; j < y.length; j++) {
+									if ((y[j].getAttribute('sky_cover') == "BKN") || (y[j].getAttribute('sky_cover') == "OVC")) {
+										metar_text = metar_text + '<br/>Clouds: ' + y[j].getAttribute('sky_cover') + ' ' + y[j].getAttribute('cloud_base_ft_agl') + 'ft AGL';
+										c++;
+									}
+								}
+
+								if (c == 0) {
+									metar_text = metar_text + '<br/>No BKN/OVC Clouds';
+								}
+
+								if (x[i].getElementsByTagName("wx_string").length) {
+									metar_text = metar_text + '<br/><span class="fom_message_caution">Current weather: ' + x[i].getElementsByTagName("wx_string")[0].childNodes[0].nodeValue + '</span>';
+								}
+							}
+							catch (e) {
+								metar_text = metar_text + 'Raw: ' + x[i].getElementsByTagName("raw_text")[0].childNodes[0].nodeValue;
+							}
+
+							let metar_time = new Date(x[i].getElementsByTagName("observation_time")[0].childNodes[0].nodeValue);
+							let metar_timestring = ("0" + metar_time.getUTCDate()).slice(- 2) + ". / " + ("0" + metar_time.getUTCHours()).slice(- 2) + ":" + ("0" + metar_time.getUTCMinutes()).slice(- 2) + 'Z';
+
+							if (Date.now() - metar_time.getTime() > 30 * 60 * 1000) {
+								metar_text = metar_text + '<br/><span class="fom_message_error">Observation time: ' + metar_timestring + '</span>';
+							}
+							else {
+								metar_text = metar_text + '<br/><span class="fom_message_ok">Observation time: ' + metar_timestring + '</span>';
+							}
+
+							showMETAR(metar_label, metar_lat, metar_lng, metar_text); //x[i].latitude, x[i].longitude, x[i].raw_text);
+						}
+
+						if (x.length > 0) {
+							var alert_time = Math.floor(Date.now() / 1000);
+							ShowAlert('<div id="utm_alert_' + alert_time + '" class="fom_message_ok_invers fom_message_emphasize fom_message_emphasize_ok_invers">' + x.length + ' METARS loaded</div>', 'utm_alert_' + alert_time);
+						}
+						else {
+							var alert_time = Math.floor(Date.now() / 1000);
+							ShowAlert('<div id="utm_alert_' + alert_time + '" class="fom_message_info_invers fom_message_emphasize fom_message_emphasize_info_invers">No METARS found within 40SM</div>', 'utm_alert_' + alert_time);
+							ButtonUnbusy(document.getElementById('load_metar'));
+						}
+
+					})();
+				}
+				);
+			}
+
+			function showMETAR(station_label, station_lat, station_lng, station_text) {
+				met_items[station_label] = new mapboxgl.Marker()
+					.setLngLat([station_lng, station_lat])
+					.setPopup(new mapboxgl.Popup({
+						closeOnClick: false,
+						closeButton: false
+					}).setHTML(station_text)) // add popup
+					.addTo(map)
+					.togglePopup();
+
+			}
+
+			function loadJSON() {
+				if (document.getElementById("geojson").value !== "") {
+					var skip_close = true;
+					try {
+						var filter_count = 0;
+						var geo = document.getElementById("geojson").value;
+						const obj = JSON.parse(geo);
+						const geo_coords = obj.features[0].geometry.coordinates[0];
+
+						for (var i = 0; i < geo_coords.length; i++) {
+
+							if (i > 0) {
+								let coords_dist = turf.distance([geo_coords[i - 1][0], geo_coords[i - 1][1]], [geo_coords[i][0], geo_coords[i][1]]);
+
+								if ((coords_dist < 20 / 1000) && (skip_close)) {
+
+									if (filter_count == 0) {
+										skip_close = confirm('Found dense point (spaced ' + Math.round(coords_dist * 1000) + 'm). Do you want to skip points closer than 20m?')
+									}
+
+									if (skip_close) {
+										filter_count++;
+										continue;
+									}
+								}
+							}
+
+							const point = {
+								'type': 'Feature',
+								'geometry': {
+									'type': 'Point',
+									'coordinates': [geo_coords[i][0], geo_coords[i][1]]
+								}
+							};
+							geojson.features.push(point);
+
+							if (geojson.features.length > 1) {
+								linestring.geometry.coordinates = geojson.features.map((point) => point.geometry.coordinates);
+							}
+						}
+
+						geojson.features.push(linestring);
+
+
+						document.getElementById("geojson").value = "";
+						document.getElementById("geojson").disabled = true;
+
+						map.getSource('geojson').setData(geojson);
+
+						var dist = turf.length(linestring);
+						const value = document.createElement('pre');
+						value.textContent = `Total distance: ${dist.toLocaleString()}km`;
+						distanceContainer.appendChild(value);
+
+						enableSim();
+
+						var alert_time = Math.floor(Date.now() / 1000);
+						ShowAlert('<div id="utm_alert_' + alert_time + '" class="fom_message_info_invers fom_message_emphasize fom_message_emphasize_info_invers">GeoJSON Path loaded (' + filter_count + ' close points skipped)</div>', 'utm_alert_' + alert_time);
+					}
+					catch (e) {
+						alert(e);
+					}
+				}
+			}
+
+		</script>
 
 </body>
-
 </html>
