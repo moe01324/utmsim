@@ -50,7 +50,7 @@
 				placeholder="Drone Identifier" required="required">
 
 			<label id="labeldronereg" for="dronereg" class="block_label">Drone Registration ID</label>
-			<input type="text" name="dronereg" id="dronereg" class="block" placeholder="Drone Registration UUID">
+			<input type="text" name="dronereg" id="dronereg" class="block" placeholder="Drone Registration ID">
 			<label id="labelicao" for="icao" class="block_label">ICAO ID</label>
 			<input type="text" name="icao" id="icao" class="block" placeholder="AE064E">
 			<label id="labelaltitude" for="altitude" class="block_label">Altitude WGS84 (m)</label>
@@ -166,7 +166,7 @@
 			</br></br>
 			(*) Based on: https://github.com/moe01324/utmsim
 			</br></br>
-			(*) SGG/GMG version 24.04.2023
+			(*) SGG/GMG version 07.05.2023
 			</br></br>
 
 			<a href="#" class="modal__close" onclick="/*TestAlert()*/">&times;</a>
@@ -837,6 +837,7 @@
 				var optitle = document.getElementById("optitle").value;
 				var altitude = document.getElementById("altitude").value;
 				var speed = document.getElementById("speed").value;
+				var regid = UUIDGeneratorBrowser();
 
 				op = new Object();
 				const trajectoryElements = [];
@@ -871,8 +872,8 @@
 				op.takeoffLocation = null;
 				op.landingLocation = null;
 				op.uasRegistrations = [{
-					"droneId": ident,
-					"registrationId": dronereg,
+					"droneId": dronereg,
+					"registrationId": regid,
 					"registrationLocation": "Central Registration Office Wien-Meidling"
 				}];
 				op.flightDetails = [{
